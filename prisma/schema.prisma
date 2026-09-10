@@ -1,0 +1,23 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Reconciliation {
+  id        String   @id
+  store     String
+  platform  String
+  expected  String
+  received  String
+  variance  String
+  status    String
+  date      String
+  time      String
+  note      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}

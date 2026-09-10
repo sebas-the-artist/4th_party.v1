@@ -1,65 +1,152 @@
-import Image from "next/image";
+import "@/styles/landing.css";
 
 export default function Home() {
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
+    <main className="landing">
+      <section className="landing__container">
+        <header className="header">
+          <div className="header__brand">
+            <p className="header__text-primary">4thParty</p>
+          </div>
+
+          <a href="#waitlist" className="header__button">
+            Get early access
           </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+        </header>
+
+        <div className="landing__hero">
+          <div className="landing__content">
+            <p className="landing__eyebrow">
+              Find delivery payout leaks before they disappear into the close.
+            </p>
+
+            <h1 className="landing__headline">
+              Reconcile DoorDash, Uber Eats, and bank payouts without the spreadsheet mess.
+            </h1>
+
+            <p className="landing__description">
+              4thParty connects your POS, delivery platforms, and bank deposits so your 
+              team can see what was sold, what was deducted, and what actually landed.
+            </p>
+
+            <div className="landing__actions">
+              <a href="#waitlist" className="landing__button landing__button--primary">
+                Join the waitlist
+              </a>
+              <a href="#how-it-works" className="landing__button landing__button--secondary">
+                See how it works
+              </a>
+            </div>
+
+            <div className="landing__cards">
+              <div className="feature-card">
+                <p className="feature-card__title">Payout matching</p>
+                <p className="feature-card__text">Match sales, fees, and deposits automatically.</p>
+              </div>
+              <div className="feature-card">
+                <p className="feature-card__title">Exception alerts</p>
+                <p className="feature-card__text">Flag missing funds, short pays, and odd charges.</p>
+              </div>
+              <div className="feature-card">
+                <p className="feature-card__title">Audit trail</p>
+                <p className="feature-card__text">Keep a clean record for finance and disputes.</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="dashboard-card">
+            <div className="dashboard-card__topbar">
+              <span className="dashboard-card__dot dashboard-card__dot--red" />
+              <span className="dashboard-card__dot dashboard-card__dot--yellow" />
+              <span className="dashboard-card__dot dashboard-card__dot--green" />
+            </div>
+
+            <div className="dashboard-card__body">
+              <div className="dashboard-card__panel">
+                <p className="dashboard-card__label">Today’s reconciliation</p>
+
+                <div className="dashboard-card__rows">
+                  <div className="dashboard-card__row">
+                    <div>
+                      <p className="dashboard-card__row-title">DoorDash sales</p>
+                      <p className="dashboard-card__row-status">matched</p>
+                    </div>
+                    <p className="dashboard-card__row-value">$8,420.00</p>
+                  </div>
+
+                  <div className="dashboard-card__row">
+                    <div>
+                      <p className="dashboard-card__row-title">Uber Eats deposits</p>
+                      <p className="dashboard-card__row-status">matched</p>
+                    </div>
+                    <p className="dashboard-card__row-value">$6,184.30</p>
+                  </div>
+
+                  <div className="dashboard-card__row">
+                    <div>
+                      <p className="dashboard-card__row-title">Unexplained deductions</p>
+                      <p className="dashboard-card__row-status dashboard-card__row-status--warning">
+                        needs review
+                      </p>
+                    </div>
+                    <p className="dashboard-card__row-value">$312.40</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="dashboard-card__stats">
+                <div className="dashboard-card__stat">
+                  <p className="dashboard-card__stat-label">Recovered this month</p>
+                  <p className="dashboard-card__stat-value">$12,480</p>
+                </div>
+                <div className="dashboard-card__stat">
+                  <p className="dashboard-card__stat-label">Open exceptions</p>
+                  <p className="dashboard-card__stat-value">14</p>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
-      </main>
-    </div>
+
+        <section id="how-it-works" className="steps">
+          <div className="steps__item">
+            <p className="steps__number">01</p>
+            <h2 className="steps__title">Connect</h2>
+            <p className="steps__text">Add delivery, POS, and bank sources in one place.</p>
+          </div>
+          <div className="steps__item">
+            <p className="steps__number">02</p>
+            <h2 className="steps__title">Match</h2>
+            <p className="steps__text">Compare sales, fees, refunds, and deposits.</p>
+          </div>
+          <div className="steps__item">
+            <p className="steps__number">03</p>
+            <h2 className="steps__title">Resolve</h2>
+            <p className="steps__text">Review exceptions and export disputes or entries.</p>
+          </div>
+        </section>
+
+        <section id="waitlist" className="cta">
+          <div className="cta__box">
+            <p className="cta__eyebrow">Early access</p>
+
+            <div className="cta__content">
+              <div className="cta__copy">
+                <h2 className="cta__headline">
+                  Built for operators who are tired of chasing missing money.
+                </h2>
+                <p className="cta__text">
+                  Start with a simple reconciliation layer. Add automation when the workflow is proven.
+                </p>
+              </div>
+
+              <a href="mailto:hello@ledgerdock.io" className="cta__button">
+                Contact us
+              </a>
+            </div>
+          </div>
+        </section>
+      </section>
+    </main>
   );
 }
