@@ -1,4 +1,52 @@
 export type ReconciliationStatus =
+  | "Matched"
+  | "Short deposit"
+  | "Error charge"
+  | "Unmatched refund";
+
+export type ReconciliationRow = {
+  id: string;
+  store: string;
+  platform: string;
+  expected: string;
+  received: string;
+  variance: string;
+  status: ReconciliationStatus;
+  date: string;
+  time: string;
+};
+
+export type ReconciliationDetail = ReconciliationRow & {
+  note: string;
+  expectedCents: number;
+  receivedCents: number;
+  varianceCents: number;
+};
+
+/* export type ReconciliationStatus =
+  | "Matched"
+  | "Short deposit"
+  | "Error charge"
+  | "Unmatched refund";
+
+export type ReconciliationRow = {
+  id: string;
+  store: string;
+  platform: string;
+  expected: string;
+  received: string;
+  variance: string;
+  status: ReconciliationStatus;
+  date: string;
+  time: string;
+};
+
+export type ReconciliationDetail = ReconciliationRow & {
+  note: string;
+};
+ */
+
+/* export type ReconciliationStatus =
   | "Short deposit"
   | "Error charge"
   | "Unmatched refund"
@@ -28,3 +76,4 @@ export type Exception = {
   amount: string;
   age: string;
 };
+ */

@@ -1,9 +1,370 @@
 import { prisma } from "@/lib/prisma";
 import type {
+  ReconciliationDetail,
+  ReconciliationRow,
+  ReconciliationStatus,
+} from "@/lib/reconciliation-types";
+
+function formatCurrencyFromCents(cents: number) {
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+  }).format(cents / 100);
+}
+
+function toReconciliationRow(reconciliation: {
+  id: string;
+  store: string;
+  platform: string;
+  expectedCents: number;
+  receivedCents: number;
+  varianceCents: number;
+  status: string;
+  date: string;
+  time: string;
+}): ReconciliationRow {
+  return {
+    id: reconciliation.id,
+    store: reconciliation.store,
+    platform: reconciliation.platform,
+    expected: formatCurrencyFromCents(reconciliation.expectedCents),
+    received: formatCurrencyFromCents(reconciliation.receivedCents),
+    variance: formatCurrencyFromCents(reconciliation.varianceCents),
+    status: reconciliation.status as ReconciliationStatus,
+    date: reconciliation.date,
+    time: reconciliation.time,
+  };
+}
+
+function toReconciliationDetail(reconciliation: {
+  id: string;
+  store: string;
+  platform: string;
+  expectedCents: number;
+  receivedCents: number;
+  varianceCents: number;
+  status: string;
+  date: string;
+  time: string;
+  note: string;
+}): ReconciliationDetail {
+  /* return {  // old PRE_"edit function for reconciliation"
+    ...toReconciliationRow(reconciliation),
+    note: reconciliation.note,
+  }; */
+  return {
+  ...toReconciliationRow(reconciliation),
+  note: reconciliation.note,
+  expectedCents: reconciliation.expectedCents,
+  receivedCents: reconciliation.receivedCents,
+  varianceCents: reconciliation.varianceCents,
+};
+
+}
+
+export async function getReconciliations(): Promise<ReconciliationRow[]> {
+  const reconciliations = await prisma.reconciliation.findMany({
+    orderBy: {
+      createdAt: "desc",
+    },
+  });
+
+  return reconciliations.map(toReconciliationRow);
+}
+
+export async function getReconciliationById(
+  id: string,
+): Promise<ReconciliationDetail | null> {
+  const reconciliation = await prisma.reconciliation.findUnique({
+    where: {
+      id,
+    },
+  });
+
+  if (!reconciliation) {
+    return null;
+  }
+
+  return toReconciliationDetail(reconciliation);
+}
+
+export async function getExceptions(): Promise<ReconciliationRow[]> {
+  const reconciliations = await prisma.reconciliation.findMany({
+    where: {
+      status: {
+        not: "Matched",
+      },
+    },
+    orderBy: {
+      createdAt: "desc",
+    },
+  });
+
+  return reconciliations.map(toReconciliationRow);
+}
+
+export async function updateReconciliationStatus(
+  id: string,
+  status: ReconciliationStatus,
+): Promise<ReconciliationDetail> {
+  const reconciliation = await prisma.reconciliation.update({
+    where: {
+      id,
+    },
+    data: {
+      status,
+    },
+  });
+
+  return toReconciliationDetail(reconciliation);
+}
+
+export type DashboardSummary = {
+  totalReconciliations: number;
+  openExceptions: number;
+  matchedRate: number;
+  unresolvedVariance: string;
+  attentionItems: ReconciliationRow[];
+};
+
+export async function getDashboardSummary(): Promise<DashboardSummary> {
+  const reconciliations = await getReconciliations();
+
+  const attentionItems = reconciliations
+    .filter((item) => item.status !== "Matched")
+    .slice(0, 5);
+
+  const openExceptions = reconciliations.filter(
+    (item) => item.status !== "Matched",
+  ).length;
+
+  const totalUnresolvedVarianceCents = reconciliations
+    .filter((item) => item.status !== "Matched")
+    .reduce((total, item) => {
+      const cents = Math.round(
+        Number(item.variance.replace(/[$,]/g, "")) * 100,
+      );
+
+      return total + Math.abs(cents);
+    }, 0);
+
+  const matchedCount = reconciliations.filter(
+    (item) => item.status === "Matched",
+  ).length;
+
+  const matchedRate =
+    reconciliations.length === 0
+      ? 0
+      : Math.round((matchedCount / reconciliations.length) * 100);
+
+  return {
+    totalReconciliations: reconciliations.length,
+    openExceptions,
+    matchedRate,
+    unresolvedVariance: formatCurrencyFromCents(
+      totalUnresolvedVarianceCents,
+    ),
+    attentionItems,
+  };
+}
+//edit reconcilliation function
+export async function updateReconciliation(
+  id: string,
+   data: {
+    store: string;
+    platform: string;
+    expectedCents: number;
+    receivedCents: number;
+    varianceCents: number;
+    status: ReconciliationStatus;
+    note: string;
+  },
+): Promise<ReconciliationDetail> {
+  const reconciliation = await prisma.reconciliation.update({
+    where: {
+      id,
+    },
+    data,
+  });
+
+  return toReconciliationDetail(reconciliation);
+}
+
+
+
+/* import { prisma } from "@/lib/prisma";
+import type {
+  ReconciliationDetail,
+  ReconciliationRow,
+  ReconciliationStatus,
+} from "@/lib/reconciliation-types";
+
+function formatCurrencyFromCents(cents: number) {
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+  }).format(cents / 100);
+}
+
+function toReconciliationRow(reconciliation: {
+  id: string;
+  store: string;
+  platform: string;
+  expectedCents: number;
+  receivedCents: number;
+  varianceCents: number;
+  status: string;
+  date: string;
+  time: string;
+}): ReconciliationRow {
+  return {
+    id: reconciliation.id,
+    store: reconciliation.store,
+    platform: reconciliation.platform,
+    expected: formatCurrencyFromCents(reconciliation.expectedCents),
+    received: formatCurrencyFromCents(reconciliation.receivedCents),
+    variance: formatCurrencyFromCents(reconciliation.varianceCents),
+    status: reconciliation.status as ReconciliationStatus,
+    date: reconciliation.date,
+    time: reconciliation.time,
+  };
+}
+
+function toReconciliationDetail(reconciliation: {
+  id: string;
+  store: string;
+  platform: string;
+  expectedCents: number;
+  receivedCents: number;
+  varianceCents: number;
+  status: string;
+  date: string;
+  time: string;
+  note: string;
+}): ReconciliationDetail {
+  return {
+    ...toReconciliationRow(reconciliation),
+    note: reconciliation.note,
+  };
+}
+
+export async function getReconciliations(): Promise<ReconciliationRow[]> {
+  const reconciliations = await prisma.reconciliation.findMany({
+    orderBy: {
+      createdAt: "desc",
+    },
+  });
+
+  return reconciliations.map(toReconciliationRow);
+}
+
+export async function getReconciliationById(
+  id: string,
+): Promise<ReconciliationDetail | null> {
+  const reconciliation = await prisma.reconciliation.findUnique({
+    where: {
+      id,
+    },
+  });
+
+  if (!reconciliation) {
+    return null;
+  }
+
+  return toReconciliationDetail(reconciliation);
+}
+
+export async function getExceptions(): Promise<ReconciliationRow[]> {
+  const reconciliations = await prisma.reconciliation.findMany({
+    where: {
+      status: {
+        not: "Matched",
+      },
+    },
+    orderBy: {
+      createdAt: "desc",
+    },
+  });
+
+  return reconciliations.map(toReconciliationRow);
+}
+
+export async function updateReconciliationStatus(
+  id: string,
+  status: ReconciliationStatus,
+): Promise<ReconciliationDetail> {
+  const reconciliation = await prisma.reconciliation.update({
+    where: {
+      id,
+    },
+     {
+      status,
+    },
+  });
+
+  return toReconciliationDetail(reconciliation);
+}
+
+export type DashboardSummary = {
+  totalReconciliations: number;
+  openExceptions: number;
+  matchedRate: number;
+  unresolvedVariance: string;
+  attentionItems: ReconciliationRow[];
+};
+
+export async function getDashboardSummary(): Promise<DashboardSummary> {
+  const reconciliations = await getReconciliations();
+
+  const attentionItems = reconciliations
+    .filter((item) => item.status !== "Matched")
+    .slice(0, 5);
+
+  const openExceptions = reconciliations.filter(
+    (item) => item.status !== "Matched",
+  ).length;
+
+  const totalUnresolvedVarianceCents = attentionItems.reduce(
+    (total, item) => {
+      const cents = Math.round(
+        Number(item.variance.replace(/[$,]/g, "")) * 100,
+      );
+
+      return total + Math.abs(cents);
+    },
+    0,
+  );
+
+  const matchedCount = reconciliations.filter(
+    (item) => item.status === "Matched",
+  ).length;
+
+  const matchedRate =
+    reconciliations.length === 0
+      ? 0
+      : Math.round((matchedCount / reconciliations.length) * 100);
+
+  return {
+    totalReconciliations: reconciliations.length,
+    openExceptions,
+    matchedRate,
+    unresolvedVariance: formatCurrencyFromCents(
+      totalUnresolvedVarianceCents,
+    ),
+    attentionItems,
+  };
+}
+
+ */
+
+
+/* import { prisma } from "@/lib/prisma";
+import type {
   Exception,
   ReconciliationDetail,
   ReconciliationRow,
 } from "@/lib/reconciliation-types";
+export
 
 function toReconciliationRow(
   reconciliation: ReconciliationDetail,
@@ -114,7 +475,7 @@ function getExceptionAge(createdAt: Date): string {
 
   return `${ageInDays} day${ageInDays === 1 ? "" : "s"} ago`;
 }
-/**/
+
 export async function updateReconciliationStatus(
   id: string,
   status: ReconciliationDetail["status"],
@@ -131,7 +492,6 @@ export async function updateReconciliationStatus(
   return toReconciliationDetail(reconciliation);
 }
 
-/* live results change below */
 export type DashboardSummary = {
   totalReconciliations: number;
   openExceptions: number;
@@ -158,8 +518,6 @@ export async function getDashboardSummary(): Promise<DashboardSummary> {
     .filter((item) => item.status !== "Matched")
     .slice(0, 5);
 
-  /* const openExceptions = attentionItems.length; */
- /*  limeted^^ now its = to the current reconciliations below */
   const openExceptions = reconciliations.filter(
     (item) => item.status !== "Matched",
   ).length;
@@ -188,7 +546,7 @@ export async function getDashboardSummary(): Promise<DashboardSummary> {
   };
 }
 
-
+ */
 
 /* import { reconciliationDetails, reconciliationRows } from "@/lib/mock-reconciliations";
 import type {
