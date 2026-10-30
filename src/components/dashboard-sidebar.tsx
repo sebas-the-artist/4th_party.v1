@@ -84,7 +84,7 @@ export function DashboardSidebar({
         </button>
         <Link className="side-brand side-brand--inline" href="/dashboard">
           <BrandMark />
-          <span className="side-brand__name">4th Party</span>
+          <span className="side-brand__name">Dishpute</span>
         </Link>
         <div className="app-topbar__chip">{storeChip}</div>
       </header>
@@ -93,7 +93,7 @@ export function DashboardSidebar({
         <Link className="side-brand" href="/dashboard">
           <BrandMark />
           <div>
-            <p className="side-brand__name">4th Party</p>
+            <p className="side-brand__name">Dishpute</p>
             <p className="side-brand__meta">Delivery recon</p>
           </div>
         </Link>
@@ -116,7 +116,7 @@ export function DashboardSidebar({
         <div className="mobile-nav__sheet">
           <div className="mobile-nav__head">
             <p id={titleId} className="side-brand__name">
-              4th Party
+              Dishpute
             </p>
             <button className="button button--ghost" type="button" onClick={() => setOpen(false)}>
               Close

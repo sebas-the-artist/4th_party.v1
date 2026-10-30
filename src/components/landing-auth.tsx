@@ -2,14 +2,14 @@
 
 import Link from "next/link";
 import { SignInButton, useAuth } from "@clerk/nextjs";
-import { clerkEnabled } from "@/lib/config";
+import { clerkEnabled, showPublicDemo } from "@/lib/config";
 
 export function LandingAuth() {
   if (!clerkEnabled) {
     return (
       <>
         <Link href="/sign-in">Sign in</Link>
-        <Link href="/dashboard">Open the sample week</Link>
+        {showPublicDemo ? <Link href="/dashboard">Open the sample week</Link> : null}
       </>
     );
   }
@@ -31,7 +31,7 @@ function LandingAuthLoaded() {
           Sign in
         </button>
       </SignInButton>
-      <Link href="/dashboard">Open the sample week</Link>
+      {showPublicDemo ? <Link href="/dashboard">Open the sample week</Link> : null}
     </>
   );
 }

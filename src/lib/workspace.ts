@@ -24,7 +24,7 @@ import { currentOwnerId, currentUserProfile } from "@/lib/auth";
 import { buildDemoWorkspace } from "@/lib/demo-seed";
 import { sanitizeEmail } from "@/lib/security";
 import { getActiveLocation, scopeWorkspace } from "@/lib/store-context";
-import { loadWorkspace, saveWorkspace, updateWorkspace } from "@/lib/store";
+import { insertWaitlistRow, loadWorkspace, saveWorkspace, updateWorkspace } from "@/lib/store";
 
 function createId(prefix: string) {
   return `${prefix}_${crypto.randomUUID().replace(/-/g, "").slice(0, 10)}`;
@@ -348,7 +348,11 @@ export async function addWaitlistEntry(input: { email: string; restaurant: strin
     };
   });
 
-  return workspace.waitlist.at(-1);
+  const saved = workspace.waitlist.find((entry) => entry.email === parsed.email);
+  if (saved) {
+    await insertWaitlistRow(saved);
+  }
+  return saved;
 }
 
 export async function addLocation(input: unknown) {

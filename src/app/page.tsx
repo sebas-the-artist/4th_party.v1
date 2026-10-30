@@ -13,7 +13,7 @@ export default function Home() {
         <header className="landing-main__header">
           <p className="landing-main__brand">
             <BrandMark />
-            4th<span className="landing-main__brand-mark">Party</span>
+            Dish<span className="landing-main__brand-mark">pute</span>
           </p>
           <nav className="landing-main__nav" aria-label="Landing">
             <a href="#how">How it works</a>
@@ -27,7 +27,7 @@ export default function Home() {
             <p className="landing-hero__eyebrow">For the person closing Sunday</p>
             <h1 className="landing-hero__title">Come in. The week is already laid out.</h1>
             <p className="landing-hero__lede">
-              4th Party reads your POS, DoorDash or Uber, and the bank deposit —
+              Dishpute reads your POS, DoorDash or Uber, and the bank deposit —
               then shows, in one ledger, what still belongs to the restaurant.
               No extra dashboard to live in. Just a warm, quiet close after a
               loud week of tickets.
@@ -131,9 +131,9 @@ export default function Home() {
         <section id="waitlist" className="landing-main__cta">
           <h2 className="landing-cta__title">If this sounds like your Sunday, say hello.</h2>
           <p className="landing-cta__text">
-            Leave a work email and the restaurant name. I’ll walk the Good
-            Burger demo against a real week of yours. Auth, Postgres, and hosting
-            plug into this same shape later — you won’t rebuild the close.
+            Leave a work email and the restaurant name. We’ll walk a real week
+            of yours against the Good Burger demo. You send the letters from
+            your merchant inbox — we never mail DoorDash or Uber for you.
           </p>
           <WaitlistForm />
         </section>
@@ -142,8 +142,7 @@ export default function Home() {
           <ThemeControls variant="dock" />
           <p>
             Good Burger is a made-up restaurant so the ledger has a week to
-            show. Working name — unrelated to the mediation product at
-            fourthparty.app.
+            show. dishpute.com is the product. Unrelated to fourthparty.app.
           </p>
         </footer>
       </div>

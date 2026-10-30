@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { SignInButton, useAuth } from "@clerk/nextjs";
-import { clerkEnabled } from "@/lib/config";
+import { clerkEnabled, showPublicDemo } from "@/lib/config";
 
 export function LandingHeroActions() {
   if (!clerkEnabled) {
@@ -14,9 +14,11 @@ export function LandingHeroActions() {
         <Link className="button button--ghost" href="/sign-in">
           Sign in
         </Link>
-        <Link className="button button--ghost" href="/dashboard">
-          Open the sample week
-        </Link>
+        {showPublicDemo ? (
+          <Link className="button button--ghost" href="/dashboard">
+            Open the sample week
+          </Link>
+        ) : null}
       </div>
     );
   }
@@ -43,9 +45,11 @@ function LandingHeroActionsLoaded() {
               Sign in
             </button>
           </SignInButton>
-          <Link className="button button--ghost" href="/dashboard">
-            Open the sample week
-          </Link>
+          {showPublicDemo ? (
+            <Link className="button button--ghost" href="/dashboard">
+              Open the sample week
+            </Link>
+          ) : null}
         </>
       )}
     </div>

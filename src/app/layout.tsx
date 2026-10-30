@@ -26,9 +26,9 @@ const mono = IBM_Plex_Mono({
 });
 
 export const metadata = {
-  title: "4th Party — delivery payout reconciliation",
+  title: "Dishpute — delivery payout reconciliation",
   description:
-    "Match POS tickets to DoorDash, Uber Eats, and bank deposits. Flag unpaid cancellations and write the dispute.",
+    "Match POS tickets to DoorDash, Uber Eats, and bank deposits. Flag unpaid cancellations and write the dispute. You send the letter from your inbox.",
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {

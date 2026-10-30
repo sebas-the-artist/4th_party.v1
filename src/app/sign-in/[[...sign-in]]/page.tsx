@@ -5,7 +5,7 @@ import { SignInPanel } from "@/components/sign-in-panel";
 export default function SignInPage() {
   return (
     <main className="auth-page">
-      <p className="page-header__kicker">4th Party</p>
+      <p className="page-header__kicker">Dishpute</p>
       <h1 className="page-header__title">Sign in</h1>
       {clerkEnabled ? (
         <SignInPanel />

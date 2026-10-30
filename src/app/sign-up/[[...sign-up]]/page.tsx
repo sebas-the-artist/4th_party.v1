@@ -5,7 +5,7 @@ import { SignUpPanel } from "@/components/sign-up-panel";
 export default function SignUpPage() {
   return (
     <main className="auth-page">
-      <p className="page-header__kicker">4th Party</p>
+      <p className="page-header__kicker">Dishpute</p>
       <h1 className="page-header__title">Create an account</h1>
       {clerkEnabled ? (
         <SignUpPanel />
