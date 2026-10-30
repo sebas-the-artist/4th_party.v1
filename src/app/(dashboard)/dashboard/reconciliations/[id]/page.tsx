@@ -1,117 +1,128 @@
-import "@/styles/dashboard.css";
 import Link from "next/link";
+import { resolveMatchAction } from "@/app/(dashboard)/dashboard/actions";
+import { DisputeTools } from "@/components/dispute-tools";
+import { StatusBadge } from "@/components/status-badge";
+import { WinBurst } from "@/components/win-burst";
+import { hasLetterBlanks } from "@/domain/disputes";
+import { formatCents } from "@/domain/money";
+import { formatStoreLine, platformLabel } from "@/domain/types";
+import { getMatchDetail, getWorkspace } from "@/lib/workspace";
 import { notFound } from "next/navigation";
-import { getReconciliationById } from "@/lib/reconciliations";
-import { resolveReconciliation } from "./actions";
-import { ReopenReconciliationForm } from "./reopen-reconciliation-form";
 
-type ReconciliationDetailPageProps = {
-  params: Promise<{
-    id: string;
-  }>;
-};
-
-function getStatusClass(status: string) {
-  switch (status) {
-    case "Matched":
-      return "status-pill status-pill--matched";
-    case "Short deposit":
-      return "status-pill status-pill--short-deposit";
-    case "Error charge":
-      return "status-pill status-pill--error-charge";
-    case "Unmatched refund":
-      return "status-pill status-pill--unmatched-refund";
-    default:
-      return "status-pill";
-  }
-}
-
-export default async function ReconciliationDetailPage({
+export default async function MatchDetailPage({
   params,
-}: ReconciliationDetailPageProps) {
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ recovered?: string }>;
+}) {
   const { id } = await params;
-  const reconciliation = await getReconciliationById(id);
+  const query = await searchParams;
+  const workspace = await getWorkspace();
+  const detail = getMatchDetail(workspace, id);
 
-  if (!reconciliation) {
+  if (!detail) {
     notFound();
   }
 
+  const { match, location, pos, delivery, deposit, dispute } = detail;
+  const recovered = Number(query.recovered ?? 0);
+
   return (
-    <section className="page-shell">
-      <Link
-        href="/dashboard/reconciliations"
-        className="page-back-link"
-      >
-        ← Back to reconciliations
+    <section>
+      {recovered > 0 ? <WinBurst recoveredCents={recovered} /> : null}
+      <Link className="page-back" href="/dashboard/reconciliations">
+        ← Reconciliations
       </Link>
-
-      <div className="page-header">
+      <header className="page-header">
         <div>
-          <p className="page-header__eyebrow">Reconciliation detail</p>
-          <h1 className="page-header__title">{reconciliation.store}</h1>
-          <p className="page-header__text">
-            {reconciliation.platform} payout reviewed on{" "}
-            {reconciliation.date} at {reconciliation.time}.
-          </p>
+          <p className="page-header__kicker">{location ? formatStoreLine(location) : "Store"}</p>
+          <h1 className="page-header__title">{platformLabel(match.platform)}</h1>
+          <p className="page-header__text">{match.summary}</p>
         </div>
+        <StatusBadge status={match.status} recoveredCents={match.recoveredCents} />
+      </header>
 
-        <div className="page-header__meta">
-          <p className="page-header__meta-label">Status</p>
-
-          <span className={getStatusClass(reconciliation.status)}>
-            {reconciliation.status}
-          </span>
-
-          {reconciliation.status !== "Matched" ? (
-            <form action={resolveReconciliation}>
-              <input type="hidden" name="id" value={reconciliation.id} />
-
-              <button
-                type="submit"
-                className="button button--primary button--resolve"
-              >
-                Resolve exception
-              </button>
-            </form>
-          ) : (
-            <ReopenReconciliationForm id={reconciliation.id} />
-          )}
-        </div>
-      </div>
+      {match.recoveredCents > 0 ? (
+        <p className="win-note">Refund received. {formatCents(match.recoveredCents)} recovered.</p>
+      ) : null}
 
       <div className="detail-grid">
-        <article className="section-card detail-card">
-          <p className="detail-card__label">Expected payout</p>
-          <p className="detail-card__value">
-            {reconciliation.expected}
-          </p>
+        <article className="detail-card">
+          <p className="metric-card__label">Expected</p>
+          <p className="metric-card__value money">{formatCents(match.expectedCents)}</p>
         </article>
-
-        <article className="section-card detail-card">
-          <p className="detail-card__label">Received payout</p>
-          <p className="detail-card__value">
-            {reconciliation.received}
-          </p>
+        <article className="detail-card">
+          <p className="metric-card__label">Received</p>
+          <p className="metric-card__value money">{formatCents(match.receivedCents)}</p>
         </article>
-
-        <article className="section-card detail-card">
-          <p className="detail-card__label">Variance</p>
-          <p
-            className={`detail-card__value ${
-              reconciliation.status === "Matched"
-                ? "detail-card__value--neutral"
-                : "detail-card__value--negative"
-            }`}
-          >
-            {reconciliation.variance}
+        <article className="detail-card">
+          <p className="metric-card__label">Variance</p>
+          <p className={`metric-card__value money ${match.status === "matched" ? "" : "detail-card__value--alert"}`}>
+            {formatCents(match.varianceCents)}
           </p>
         </article>
       </div>
 
-      <article className="section-card detail-note">
-        <p className="detail-note__label">Review note</p>
-        <p className="detail-note__text">{reconciliation.note}</p>
-      </article>
+      <section className="section detail-grid">
+        <article className="detail-card">
+          <p className="metric-card__label">POS</p>
+          <p>{pos ? `${pos.ticketId} · ${formatCents(pos.grossCents)} · ${pos.status}` : "No ticket"}</p>
+        </article>
+        <article className="detail-card">
+          <p className="metric-card__label">Delivery</p>
+          <p>
+            {delivery
+              ? `${delivery.orderId} · net ${formatCents(delivery.netCents)} · ${delivery.status}`
+              : "No payout line"}
+          </p>
+        </article>
+        <article className="detail-card">
+          <p className="metric-card__label">Bank</p>
+          <p>
+            {deposit
+              ? `${deposit.memo} · ${formatCents(deposit.amountCents)} · ${deposit.maskedAccount}`
+              : "Not a deposit line"}
+          </p>
+        </article>
+      </section>
+
+      {dispute ? (
+        <article className="note-card section">
+          <p className="metric-card__label">Dispute draft</p>
+          <pre className="dispute-body">{dispute.body}</pre>
+          {match.status !== "matched" ? (
+            <>
+              <DisputeTools
+                matchId={match.id}
+                subject={dispute.subject}
+                body={dispute.body}
+                toEmail={dispute.toEmail}
+                blocked={hasLetterBlanks(dispute.body)}
+              />
+              <div className="ingest-form__footer">
+                <Link className="button button--ghost" href={`/dashboard/disputes/${dispute.id}`}>
+                  Edit draft
+                </Link>
+                <form action={resolveMatchAction}>
+                  <input type="hidden" name="matchId" value={match.id} />
+                  <input type="hidden" name="outcome" value="approved" />
+                  <button className="button button--primary" type="submit">
+                    Mark refund received
+                  </button>
+                </form>
+                <form action={resolveMatchAction}>
+                  <input type="hidden" name="matchId" value={match.id} />
+                  <input type="hidden" name="outcome" value="denied" />
+                  <button className="button button--ghost" type="submit">
+                    Refund denied
+                  </button>
+                </form>
+              </div>
+            </>
+          ) : null}
+        </article>
+      ) : null}
     </section>
   );
 }

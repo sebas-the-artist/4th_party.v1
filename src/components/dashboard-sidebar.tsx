@@ -2,96 +2,130 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect, useId, useRef, useState, type ReactNode } from "react";
+import { loadDemoAction } from "@/app/(dashboard)/dashboard/actions";
+import { BrandMark } from "@/components/brand-mark";
+import { DASHBOARD_NAV, navIsActive } from "@/components/nav-items";
+import { SupportLink } from "@/components/support-link";
 
-const navItems = [
-  { href: "/dashboard", label: "Overview" },
-  { href: "/dashboard/reconciliations", label: "Reconciliations" },
-  { href: "/dashboard/exceptions", label: "Exceptions" },
-  { href: "/dashboard/settings", label: "Settings" },
-];
-
-export function DashboardSidebar() {
+function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
-
   return (
-    <aside className="dashboard__sidebar">
-      <div className="dashboard-brand">
-        <p className="dashboard-brand__eyebrow">Payout app</p>
-        <h1 className="dashboard-brand__title">Ledgerflow</h1>
-      </div>
-
-      <nav className="dashboard-nav" aria-label="Dashboard navigation">
-        {navItems.map((item) => {
-          const active =
-            item.href === "/dashboard"
-              ? pathname === "/dashboard"
-              : pathname.startsWith(item.href);
-
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={`dashboard-nav__link ${
-                active ? "dashboard-nav__link--active" : ""
-              }`}
-            >
-              {item.label}
-            </Link>
-          );
-        })}
-      </nav>
-    </aside>
+    <nav className="side-nav" aria-label="App">
+      {DASHBOARD_NAV.map((item) => {
+        const active = navIsActive(pathname, item.href);
+        return (
+          <Link
+            key={item.href}
+            href={item.href}
+            className={`side-nav__link ${active ? "side-nav__link--active" : ""}`}
+            onClick={onNavigate}
+          >
+            {item.label}
+          </Link>
+        );
+      })}
+    </nav>
   );
 }
 
-
-
-/* "use client";
-
-import Link from "next/link";
-import { usePathname } from "next/navigation";
-
-const navItems = [
-  { label: "Overview", href: "/dashboard" },
-  { label: "Reconciliations", href: "/dashboard/reconciliations" },
-  { label: "Exceptions", href: "/dashboard/exceptions" },
-  { label: "Disputes", href: "/dashboard/disputes" },
-  { label: "Reports", href: "/dashboard/reports" },
-  { label: "Settings", href: "/dashboard/settings" },
-];
-
-export default function DashboardSidebar() {
-  const pathname = usePathname();
-
+function Dock({ accountSlot }: { accountSlot: ReactNode }) {
   return (
-    <div className="sidebar">
-      <div className="sidebar__brand">
-        <p className="sidebar__brand-name">LedgerDock</p>
-        <p className="sidebar__brand-subtext">Delivery payout reconciliation</p>
-      </div>
-
-      <nav className="sidebar__nav">
-        {navItems.map((item) => {
-          const isActive =
-            pathname === item.href || pathname.startsWith(`${item.href}/`);
-
-          return (
-            <Link
-              key={item.label}
-              href={item.href}
-              className={`sidebar__link ${isActive ? "sidebar__link--active" : ""}`}
-            >
-              {item.label}
-            </Link>
-          );
-        })}
-      </nav>
-
-      <div className="sidebar__footer">
-        <p className="sidebar__footer-label">Workspace</p>
-        <p className="sidebar__footer-value">Cape Coral Group</p>
-      </div>
+    <div className="side-dock">
+      <form action={loadDemoAction}>
+        <button className="button button--ghost" type="submit">
+          Load sample week
+        </button>
+      </form>
+      <SupportLink compact />
+      <div className="side-dock__account">{accountSlot}</div>
     </div>
   );
 }
- */
+
+export function DashboardSidebar({
+  accountSlot,
+  storeChip,
+}: {
+  accountSlot: ReactNode;
+  storeChip?: ReactNode;
+}) {
+  const [open, setOpen] = useState(false);
+  const dialogRef = useRef<HTMLDialogElement>(null);
+  const titleId = useId();
+  const pathname = usePathname();
+
+  useEffect(() => {
+    setOpen(false);
+  }, [pathname]);
+
+  useEffect(() => {
+    const node = dialogRef.current;
+    if (!node) return;
+    if (open && !node.open) {
+      node.showModal();
+    }
+    if (!open && node.open) {
+      node.close();
+    }
+  }, [open]);
+
+  return (
+    <div className="app-shell__nav">
+      <header className="app-topbar">
+        <button
+          className="app-topbar__menu"
+          type="button"
+          aria-expanded={open}
+          aria-controls="mobile-nav"
+          onClick={() => setOpen(true)}
+        >
+          Menu
+        </button>
+        <Link className="side-brand side-brand--inline" href="/dashboard">
+          <BrandMark />
+          <span className="side-brand__name">4th Party</span>
+        </Link>
+        <div className="app-topbar__chip">{storeChip}</div>
+      </header>
+
+      <aside className="app-shell__sidebar">
+        <Link className="side-brand" href="/dashboard">
+          <BrandMark />
+          <div>
+            <p className="side-brand__name">4th Party</p>
+            <p className="side-brand__meta">Delivery recon</p>
+          </div>
+        </Link>
+        <NavLinks />
+        <Dock accountSlot={accountSlot} />
+      </aside>
+
+      <dialog
+        id="mobile-nav"
+        ref={dialogRef}
+        className="mobile-nav"
+        aria-labelledby={titleId}
+        onClose={() => setOpen(false)}
+        onClick={(event) => {
+          if (event.target === dialogRef.current) {
+            setOpen(false);
+          }
+        }}
+      >
+        <div className="mobile-nav__sheet">
+          <div className="mobile-nav__head">
+            <p id={titleId} className="side-brand__name">
+              4th Party
+            </p>
+            <button className="button button--ghost" type="button" onClick={() => setOpen(false)}>
+              Close
+            </button>
+          </div>
+          <NavLinks onNavigate={() => setOpen(false)} />
+          <Dock accountSlot={accountSlot} />
+        </div>
+      </dialog>
+    </div>
+  );
+}

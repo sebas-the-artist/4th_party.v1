@@ -1,13 +1,16 @@
 import { NextResponse } from "next/server";
-import { getReconciliations } from "@/lib/reconciliations";
+import { SECURITY_HEADERS } from "@/lib/security";
+import { getWorkspace, latestRunMatches } from "@/lib/workspace";
 
 export async function GET() {
-  const reconciliations = await getReconciliations();
+  const workspace = await getWorkspace();
+  const matches = latestRunMatches(workspace);
 
-  return NextResponse.json({
-     reconciliations,
-    meta: {
-      count: reconciliations.length,
+  return NextResponse.json(
+    {
+      matches,
+      meta: { count: matches.length },
     },
-  });
+    { headers: SECURITY_HEADERS },
+  );
 }

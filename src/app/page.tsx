@@ -1,152 +1,152 @@
+import Link from "next/link";
+import { BrandMark } from "@/components/brand-mark";
+import { LandingAuth } from "@/components/landing-auth";
+import { LandingHeroActions } from "@/components/landing-hero-actions";
+import { ThemeControls } from "@/components/theme-controls";
+import { WaitlistForm } from "@/components/waitlist-form";
 import "@/styles/landing.css";
 
 export default function Home() {
   return (
     <main className="landing">
-      <section className="landing__container">
-        <header className="header">
-          <div className="header__brand">
-            <p className="header__text-primary">4thParty</p>
-          </div>
-
-          <a href="#waitlist" className="header__button">
-            Get early access
-          </a>
+      <div className="landing-main">
+        <header className="landing-main__header">
+          <p className="landing-main__brand">
+            <BrandMark />
+            4th<span className="landing-main__brand-mark">Party</span>
+          </p>
+          <nav className="landing-main__nav" aria-label="Landing">
+            <a href="#how">How it works</a>
+            <a href="#waitlist">Say hello</a>
+            <LandingAuth />
+          </nav>
         </header>
 
-        <div className="landing__hero">
-          <div className="landing__content">
-            <p className="landing__eyebrow">
-              Find delivery payout leaks before they disappear into the close.
+        <section className="landing-main__hero">
+          <div className="landing-hero">
+            <p className="landing-hero__eyebrow">For the person closing Sunday</p>
+            <h1 className="landing-hero__title">Come in. The week is already laid out.</h1>
+            <p className="landing-hero__lede">
+              4th Party reads your POS, DoorDash or Uber, and the bank deposit —
+              then shows, in one ledger, what still belongs to the restaurant.
+              No extra dashboard to live in. Just a warm, quiet close after a
+              loud week of tickets.
             </p>
+            <LandingHeroActions />
+          </div>
 
-            <h1 className="landing__headline">
-              Reconcile DoorDash, Uber Eats, and bank payouts without the spreadsheet mess.
-            </h1>
-
-            <p className="landing__description">
-              4thParty connects your POS, delivery platforms, and bank deposits so your 
-              team can see what was sold, what was deducted, and what actually landed.
-            </p>
-
-            <div className="landing__actions">
-              <a href="#waitlist" className="landing__button landing__button--primary">
-                Join the waitlist
-              </a>
-              <a href="#how-it-works" className="landing__button landing__button--secondary">
-                See how it works
-              </a>
+          <aside className="landing-ledger" aria-label="Sample week">
+            <div className="landing-ledger__rule">
+              <span>Good Burger · week 41</span>
+              <span>Cape Coral</span>
             </div>
-
-            <div className="landing__cards">
-              <div className="feature-card">
-                <p className="feature-card__title">Payout matching</p>
-                <p className="feature-card__text">Match sales, fees, and deposits automatically.</p>
+            <div className="landing-ledger__row">
+              <div>
+                <p className="landing-ledger__name">DoorDash DD-4418</p>
+                <p className="landing-ledger__meta">Cooked on Toast, canceled unpaid</p>
               </div>
-              <div className="feature-card">
-                <p className="feature-card__title">Exception alerts</p>
-                <p className="feature-card__text">Flag missing funds, short pays, and odd charges.</p>
-              </div>
-              <div className="feature-card">
-                <p className="feature-card__title">Audit trail</p>
-                <p className="feature-card__text">Keep a clean record for finance and disputes.</p>
-              </div>
+              <span className="status-badge status-badge--unpaid_cancellation">Cancel</span>
+              <p className="landing-ledger__amount money">-$36.50</p>
             </div>
-          </div>
-
-          <div className="dashboard-card">
-            <div className="dashboard-card__topbar">
-              <span className="dashboard-card__dot dashboard-card__dot--red" />
-              <span className="dashboard-card__dot dashboard-card__dot--yellow" />
-              <span className="dashboard-card__dot dashboard-card__dot--green" />
-            </div>
-
-            <div className="dashboard-card__body">
-              <div className="dashboard-card__panel">
-                <p className="dashboard-card__label">Today’s reconciliation</p>
-
-                <div className="dashboard-card__rows">
-                  <div className="dashboard-card__row">
-                    <div>
-                      <p className="dashboard-card__row-title">DoorDash sales</p>
-                      <p className="dashboard-card__row-status">matched</p>
-                    </div>
-                    <p className="dashboard-card__row-value">$8,420.00</p>
-                  </div>
-
-                  <div className="dashboard-card__row">
-                    <div>
-                      <p className="dashboard-card__row-title">Uber Eats deposits</p>
-                      <p className="dashboard-card__row-status">matched</p>
-                    </div>
-                    <p className="dashboard-card__row-value">$6,184.30</p>
-                  </div>
-
-                  <div className="dashboard-card__row">
-                    <div>
-                      <p className="dashboard-card__row-title">Unexplained deductions</p>
-                      <p className="dashboard-card__row-status dashboard-card__row-status--warning">
-                        needs review
-                      </p>
-                    </div>
-                    <p className="dashboard-card__row-value">$312.40</p>
-                  </div>
-                </div>
+            <div className="landing-ledger__row">
+              <div>
+                <p className="landing-ledger__name">DoorDash DD-4420</p>
+                <p className="landing-ledger__meta">Missing-item clawback, food still sold</p>
               </div>
-
-              <div className="dashboard-card__stats">
-                <div className="dashboard-card__stat">
-                  <p className="dashboard-card__stat-label">Recovered this month</p>
-                  <p className="dashboard-card__stat-value">$12,480</p>
-                </div>
-                <div className="dashboard-card__stat">
-                  <p className="dashboard-card__stat-label">Open exceptions</p>
-                  <p className="dashboard-card__stat-value">14</p>
-                </div>
-              </div>
+              <span className="status-badge status-badge--short_pay">Short</span>
+              <p className="landing-ledger__amount money">-$8.00</p>
             </div>
-          </div>
-        </div>
-
-        <section id="how-it-works" className="steps">
-          <div className="steps__item">
-            <p className="steps__number">01</p>
-            <h2 className="steps__title">Connect</h2>
-            <p className="steps__text">Add delivery, POS, and bank sources in one place.</p>
-          </div>
-          <div className="steps__item">
-            <p className="steps__number">02</p>
-            <h2 className="steps__title">Match</h2>
-            <p className="steps__text">Compare sales, fees, refunds, and deposits.</p>
-          </div>
-          <div className="steps__item">
-            <p className="steps__number">03</p>
-            <h2 className="steps__title">Resolve</h2>
-            <p className="steps__text">Review exceptions and export disputes or entries.</p>
-          </div>
+            <div className="landing-ledger__row">
+              <div>
+                <p className="landing-ledger__name">Uber UE-9188</p>
+                <p className="landing-ledger__meta">Ticket, payout, and deposit agree</p>
+              </div>
+              <span className="status-badge status-badge--matched">Matched</span>
+              <p className="landing-ledger__amount landing-ledger__amount--ok money">$0.00</p>
+            </div>
+            <div className="landing-ledger__foot">
+              <span>Still owed this week</span>
+              <p className="landing-ledger__variance money">-$72.30</p>
+            </div>
+          </aside>
         </section>
 
-        <section id="waitlist" className="cta">
-          <div className="cta__box">
-            <p className="cta__eyebrow">Early access</p>
-
-            <div className="cta__content">
-              <div className="cta__copy">
-                <h2 className="cta__headline">
-                  Built for operators who are tired of chasing missing money.
-                </h2>
-                <p className="cta__text">
-                  Start with a simple reconciliation layer. Add automation when the workflow is proven.
-                </p>
-              </div>
-
-              <a href="mailto:hello@ledgerdock.io" className="cta__button">
-                Contact us
-              </a>
-            </div>
-          </div>
+        <section id="how" className="landing-main__steps">
+          <article className="landing-step">
+            <p className="landing-step__index">01 · Bring the three files</p>
+            <h2 className="landing-step__title">POS, delivery, bank.</h2>
+            <p className="landing-step__text">
+              Paste the CSVs you already download. Later, Toast, DoorDash, Uber,
+              and the operating account fill the same columns. The matching logic
+              does not get rewritten.
+            </p>
+          </article>
+          <article className="landing-step">
+            <p className="landing-step__index">02 · We match the week</p>
+            <h2 className="landing-step__title">Ticket → payout → deposit.</h2>
+            <p className="landing-step__text">
+              Money is stored as integer cents. Commission comes from the rate
+              you contracted, not from whatever the payout file decided to call a
+              fee.
+            </p>
+          </article>
+          <article className="landing-step">
+            <p className="landing-step__index">03 · You send the letter</p>
+            <h2 className="landing-step__title">From your inbox, not ours.</h2>
+            <p className="landing-step__text">
+              Unpaid cancellations and clawbacks get a note you paste into your
+              own mail app or the platform portal. We never email DoorDash or
+              Uber for you. Support only sees the restaurant.
+            </p>
+          </article>
         </section>
-      </section>
+
+        <section className="landing-main__proof">
+          <article className="landing-proof__card">
+            <p className="landing-proof__kicker">Who it’s for</p>
+            <h2 className="landing-proof__title">A handful of busy stores</h2>
+            <p className="landing-proof__text">
+              Pizza, burger, sushi. Owner-operators and controllers who would
+              rather not spend Monday inside three spreadsheets.
+            </p>
+          </article>
+          <article className="landing-proof__card">
+            <p className="landing-proof__kicker">What you stop doing</p>
+            <h2 className="landing-proof__title">Guessing at the lump deposit</h2>
+            <p className="landing-proof__text">
+              Gross, commission, cancellations, and the bank line sit in one
+              cream ledger. If something is short, it has a name.
+            </p>
+          </article>
+          <article className="landing-proof__card">
+            <p className="landing-proof__kicker">What you keep</p>
+            <h2 className="landing-proof__title">The money they quietly keep</h2>
+            <p className="landing-proof__text">
+              A few hundred dollars a week adds up. The product is the letter,
+              not another chart.
+            </p>
+          </article>
+        </section>
+
+        <section id="waitlist" className="landing-main__cta">
+          <h2 className="landing-cta__title">If this sounds like your Sunday, say hello.</h2>
+          <p className="landing-cta__text">
+            Leave a work email and the restaurant name. I’ll walk the Good
+            Burger demo against a real week of yours. Auth, Postgres, and hosting
+            plug into this same shape later — you won’t rebuild the close.
+          </p>
+          <WaitlistForm />
+        </section>
+
+        <footer className="landing-main__footer">
+          <ThemeControls variant="dock" />
+          <p>
+            Good Burger is a made-up restaurant so the ledger has a week to
+            show. Working name — unrelated to the mediation product at
+            fourthparty.app.
+          </p>
+        </footer>
+      </div>
     </main>
   );
 }

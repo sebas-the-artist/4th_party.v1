@@ -1,36 +1,44 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 4th Party
 
-## Getting Started
+Delivery payout reconciliation for restaurants. Match POS tickets to DoorDash / Uber Eats payouts to bank deposits. Flag unpaid cancellations. Write the dispute letter.
 
-First, run the development server:
+This repo is usable locally without Clerk, Postgres, or hosting. Those plug in later without rewriting the matching engine.
+
+## Run it
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000). The landing waitlist and the Good Burger demo week live in `data/workspace-*.json` (created on first load, ignored by git).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## What is real today
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- Three-way match on integer cents
+- Contracted commission rates, not whatever the payout file claims
+- CSV ingest for POS, delivery, and bank
+- Dispute letters you can copy
+- Masked source credentials
+- Zod on every write
 
-## Learn More
+## What you add later
 
-To learn more about Next.js, take a look at the following resources:
+- **Auth:** Clerk around `/dashboard`
+- **Database:** implement `src/lib/store.ts` with Prisma using `prisma/schema.prisma` (same fields)
+- **Hosting:** Vercel or similar
+- **Live APIs:** fill the same POS / delivery / bank records instead of CSV paste
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## CSV columns
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+POS: `ticket_id,order_id,ticket_at,gross,status`
 
-## Deploy on Vercel
+Delivery: `platform,order_id,payout_item_id,payout_batch_id,sold_at,gross,commission,adjustment,net,status,adjustment_reason`
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Bank: `platform,payout_batch_id,posted_on,amount,account,memo`
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Amounts are dollars (`54.00`), stored as cents.
+
+## Name
+
+4th Party is a working name. `fourthparty.app` is an unrelated mediation product.

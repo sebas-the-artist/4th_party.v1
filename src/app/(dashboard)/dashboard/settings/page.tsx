@@ -1,75 +1,67 @@
-import "@/styles/dashboard.css";
+import Link from "next/link";
+import { ContactForm } from "@/components/contact-form";
+import { SupportLink } from "@/components/support-link";
+import { ThemeControls } from "@/components/theme-controls";
+import { SUPPORT_EMAIL } from "@/lib/config";
+import { getScopedWorkspace } from "@/lib/workspace";
 
-const integrations = [
-  {
-    name: "Uber Eats",
-    status: "Connected",
-    detail: "Merchant account synced and reporting enabled.",
-  },
-  {
-    name: "DoorDash",
-    status: "Connected",
-    detail: "Payouts and order error reports available.",
-  },
-  {
-    name: "Grubhub",
-    status: "Not connected",
-    detail: "Add account access to start importing payouts.",
-  },
-];
+export default async function SettingsPage() {
+  const { workspace, location } = await getScopedWorkspace();
 
-export default function SettingsPage() {
   return (
-    <section className="page-shell">
-      <div className="page-header">
+    <section>
+      <header className="page-header">
         <div>
-          <p className="page-header__eyebrow">Settings</p>
-          <h1 className="page-header__title">Integrations</h1>
+          <p className="page-header__kicker">Settings</p>
+          <h1 className="page-header__title">Workspace</h1>
           <p className="page-header__text">
-            Manage the platforms and connections that feed reconciliation data into the app.
+            Palettes live in the browser. Change light, dark, and color here or
+            on the landing page. Account sign-out is in the sidebar.
           </p>
         </div>
+      </header>
 
-        <div className="page-header__meta">
-          <p className="page-header__meta-label">Connected</p>
-          <p className="page-header__meta-value">2</p>
-        </div>
-      </div>
-
-      <div className="settings-grid">
-        <article className="section-card">
-          <h2 className="section-card__title">Platform connections</h2>
-          <p className="section-card__text">
-            Keep the delivery sources aligned so payout and exception data stays current.
+      <section className="section">
+        <h2 className="section__title">Letter signature</h2>
+        <article className="note-card">
+          <p className="metric-card__label">Name, title, phone, merchant email</p>
+          <p className="page-header__text">
+            Open drafts always use this block. Edit it, save, then open a
+            letter — the old name is replaced, not left sitting under a “saved”
+            toast.
           </p>
-
-          <div className="settings-list">
-            {integrations.map((item) => (
-              <div key={item.name} className="settings-item">
-                <div>
-                  <p className="settings-item__title">{item.name}</p>
-                  <p className="settings-item__text">{item.detail}</p>
-                </div>
-
-                <span
-                  className={`status-badge ${
-                    item.status === "Connected" ? "status-badge--good" : "status-badge--warn"
-                  }`}
-                >
-                  {item.status}
-                </span>
-              </div>
-            ))}
-          </div>
+          <ContactForm
+            contact={workspace.contact}
+            businessName={location?.name ?? workspace.locations[0]?.name ?? "Good Burger"}
+          />
         </article>
+      </section>
 
-        <article className="section-card">
-          <h2 className="section-card__title">Sync rules</h2>
-          <p className="section-card__text">
-            Later this can control date ranges, refresh cadence, and import permissions.
+      <section className="section">
+        <h2 className="section__title">Look</h2>
+        <article className="note-card">
+          <p className="metric-card__label">Light, dark, and a named mix</p>
+          <p className="page-header__text">
+            Light uses the pale shade as the page. Dark inverts and puts the deep
+            shade underneath.
           </p>
+          <ThemeControls variant="panel" />
         </article>
-      </div>
+      </section>
+
+      <section className="section">
+        <h2 className="section__title">Support</h2>
+        <article className="note-card">
+          <SupportLink />
+          <p className="page-header__text">
+            Replace <code>NEXT_PUBLIC_SUPPORT_EMAIL</code> ({SUPPORT_EMAIL}) when the
+            real domain is ready.
+          </p>
+          <Link className="button button--ghost" href="/dashboard/reports">
+            Copy a week note
+          </Link>
+        </article>
+      </section>
     </section>
   );
 }

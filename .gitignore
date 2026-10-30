@@ -39,3 +39,9 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# local ledger (durable on disk, not committed)
+/data/workspace.json
+/data/workspace.json.tmp
+/data/workspace-*.json
+/data/workspace-*.json.tmp

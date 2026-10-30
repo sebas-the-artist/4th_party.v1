@@ -1,23 +1,130 @@
+// Future Postgres shape. The live app reads data/workspace-{ownerId}.json
+// through src/lib/store.ts using these same fields (integer cents).
+// clerkUserId is the tenant key. Do not run prisma migrate until you swap
+// the JSON store for Postgres.
+
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
-model Reconciliation {
-  id        String   @id
-  store     String
-  platform  String
-  expected  String
-  received  String
-  variance  String
-  status    String
-  date      String
-  time      String
-  note      String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+model Account {
+  id          String     @id
+  clerkUserId String     @unique
+  createdAt   DateTime   @default(now())
+  locations   Location[]
+}
+
+model Location {
+  id            String   @id
+  accountId     String
+  account       Account  @relation(fields: [accountId], references: [id])
+  name          String
+  storeNumber   String
+  address       String
+  city          String
+  state         String
+  postalCode    String
+  billingActive Boolean  @default(true)
+  sources       Source[]
+}
+
+model Source {
+  id               String   @id
+  locationId       String
+  location         Location @relation(fields: [locationId], references: [id])
+  kind             String
+  label            String
+  platform         String?
+  commissionBps    Int?
+  maskedCredential String
+  connected        Boolean
+  supportEmail     String?
+}
+
+model PosOrder {
+  id              String   @id
+  locationId      String
+  ticketId        String
+  platformOrderId String
+  ticketAt        DateTime
+  grossCents      Int
+  status          String
+}
+
+model DeliveryItem {
+  id               String   @id
+  locationId       String
+  platform         String
+  orderId          String
+  payoutItemId     String
+  payoutBatchId    String
+  soldAt           DateTime
+  grossCents       Int
+  commissionCents  Int
+  adjustmentCents  Int
+  netCents         Int
+  status           String
+  adjustmentReason String
+}
+
+model BankDeposit {
+  id            String   @id
+  locationId    String
+  platform      String
+  payoutBatchId String
+  postedOn      DateTime
+  amountCents   Int
+  maskedAccount String
+  memo          String
+}
+
+model ReconciliationRun {
+  id               String   @id
+  locationId       String
+  periodStart      DateTime
+  periodEnd        DateTime
+  status           String
+  netVarianceCents Int
+  createdAt        DateTime
+}
+
+model MatchRecord {
+  id             String  @id
+  runId          String
+  locationId     String
+  platform       String
+  posOrderId     String?
+  deliveryItemId String?
+  bankDepositId  String?
+  status         String
+  expectedCents  Int
+  receivedCents  Int
+  varianceCents  Int
+  recoveredCents Int     @default(0)
+  summary        String
+  disputeText    String
+}
+
+model Dispute {
+  id         String   @id
+  matchId    String
+  runId      String
+  locationId String
+  status     String
+  subject    String
+  body       String
+  toEmail    String
+  updatedAt  DateTime
+}
+
+model WaitlistEntry {
+  id         String   @id
+  email      String   @unique
+  restaurant String
+  createdAt  DateTime
 }
