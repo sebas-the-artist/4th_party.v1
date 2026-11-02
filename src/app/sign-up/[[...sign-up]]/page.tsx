@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { clerkEnabled } from "@/lib/config";
+import { clerkKeysReady } from "@/lib/clerk-env";
 import { SignUpPanel } from "@/components/sign-up-panel";
 
 export default function SignUpPage() {
@@ -7,11 +7,11 @@ export default function SignUpPage() {
     <main className="auth-page">
       <p className="page-header__kicker">Dishpute</p>
       <h1 className="page-header__title">Create an account</h1>
-      {clerkEnabled ? (
+      {clerkKeysReady() ? (
         <SignUpPanel />
       ) : (
         <p>
-          Clerk is not configured yet. <Link href="/sign-in">Back to sign in</Link>.
+          Sign up is not connected yet. <Link href="/sign-in">Back to sign in</Link>.
         </p>
       )}
     </main>

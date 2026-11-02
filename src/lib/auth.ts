@@ -1,7 +1,7 @@
-import { clerkEnabled } from "@/lib/config";
+import { clerkKeysReady } from "@/lib/clerk-env";
 
 export async function currentOwnerId(): Promise<string> {
-  if (!clerkEnabled) {
+  if (!clerkKeysReady()) {
     return "demo";
   }
 
@@ -16,7 +16,7 @@ export async function currentUserEmail(): Promise<string | null> {
 }
 
 export async function currentUserProfile(): Promise<{ name: string; email: string }> {
-  if (!clerkEnabled) {
+  if (!clerkKeysReady()) {
     return { name: "", email: "" };
   }
 
@@ -32,7 +32,7 @@ export async function currentUserProfile(): Promise<{ name: string; email: strin
 }
 
 export async function isSignedIn(): Promise<boolean> {
-  if (!clerkEnabled) {
+  if (!clerkKeysReady()) {
     return false;
   }
   const { auth } = await import("@clerk/nextjs/server");

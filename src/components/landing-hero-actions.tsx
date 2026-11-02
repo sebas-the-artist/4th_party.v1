@@ -2,9 +2,11 @@
 
 import Link from "next/link";
 import { SignInButton, useAuth } from "@clerk/nextjs";
-import { clerkEnabled, showPublicDemo } from "@/lib/config";
+import { useClerkEnabled } from "@/components/clerk-flag";
+import { showPublicDemo } from "@/lib/config";
 
 export function LandingHeroActions() {
+  const clerkEnabled = useClerkEnabled();
   if (!clerkEnabled) {
     return (
       <div className="landing-hero__actions">

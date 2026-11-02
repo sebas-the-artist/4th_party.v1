@@ -1,7 +1,8 @@
 import type { ReactNode } from "react";
 import { ClerkProvider } from "@clerk/nextjs";
 import { IBM_Plex_Mono, IBM_Plex_Sans, Newsreader } from "next/font/google";
-import { clerkEnabled, clerkPublishableKey } from "@/lib/config";
+import { ClerkFlagProvider } from "@/components/clerk-flag";
+import { clerkKeysReady, readClerkPublishableKey } from "@/lib/clerk-env";
 import { themeBootstrapScript } from "@/theme/palettes";
 import "./globals.css";
 
@@ -25,6 +26,8 @@ const mono = IBM_Plex_Mono({
   display: "swap",
 });
 
+export const dynamic = "force-dynamic";
+
 export const metadata = {
   title: "Dishpute — delivery payout reconciliation",
   description:
@@ -32,18 +35,21 @@ export const metadata = {
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
-  const page = clerkEnabled ? (
-    <ClerkProvider
-      publishableKey={clerkPublishableKey}
-      afterSignOutUrl="/"
-      signInUrl="/sign-in"
-      signUpUrl="/sign-up"
-    >
-      {children}
-    </ClerkProvider>
-  ) : (
-    children
-  );
+  const publishableKey = readClerkPublishableKey();
+  const enabled = clerkKeysReady();
+  const page =
+    enabled && publishableKey ? (
+      <ClerkProvider
+        publishableKey={publishableKey}
+        afterSignOutUrl="/"
+        signInUrl="/sign-in"
+        signUpUrl="/sign-up"
+      >
+        <ClerkFlagProvider enabled>{children}</ClerkFlagProvider>
+      </ClerkProvider>
+    ) : (
+      <ClerkFlagProvider enabled={false}>{children}</ClerkFlagProvider>
+    );
 
   return (
     <html

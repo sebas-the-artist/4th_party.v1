@@ -1,9 +1,10 @@
 "use client";
 
 import { UserButton, useAuth } from "@clerk/nextjs";
-import { clerkEnabled } from "@/lib/config";
+import { useClerkEnabled } from "@/components/clerk-flag";
 
 export function AccountMenu() {
+  const clerkEnabled = useClerkEnabled();
   if (!clerkEnabled) {
     return <p className="side-dock__demo">Local demo · sign-in keys not set</p>;
   }

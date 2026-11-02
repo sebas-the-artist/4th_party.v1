@@ -3,8 +3,9 @@ export const PRODUCT_NAME = "Dishpute";
 export const SUPPORT_EMAIL =
   process.env.NEXT_PUBLIC_SUPPORT_EMAIL ?? "support@dishpute.com";
 
+/** Prefer `useClerkEnabled()` in client code. This can be stale if keys were added after a cached build. */
 export const clerkPublishableKey =
-  process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY ?? "";
+  process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY ?? process.env.CLERK_PUBLISHABLE_KEY ?? "";
 
 export const clerkEnabled = clerkPublishableKey.startsWith("pk_");
 

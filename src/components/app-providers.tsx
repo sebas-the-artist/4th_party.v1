@@ -2,16 +2,21 @@
 
 import type { ReactNode } from "react";
 import { ClerkProvider } from "@clerk/nextjs";
-import { clerkEnabled, clerkPublishableKey } from "@/lib/config";
 
-export function AppProviders({ children }: { children: ReactNode }) {
-  if (!clerkEnabled) {
+export function AppProviders({
+  children,
+  publishableKey,
+}: {
+  children: ReactNode;
+  publishableKey?: string;
+}) {
+  if (!publishableKey?.startsWith("pk_")) {
     return children;
   }
 
   return (
     <ClerkProvider
-      publishableKey={clerkPublishableKey}
+      publishableKey={publishableKey}
       afterSignOutUrl="/"
       signInUrl="/sign-in"
       signUpUrl="/sign-up"

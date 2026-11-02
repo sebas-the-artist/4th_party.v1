@@ -1,10 +1,9 @@
 import { NextResponse } from "next/server";
 import type { NextFetchEvent, NextRequest } from "next/server";
+import { clerkKeysReady } from "@/lib/clerk-env";
 
 export default async function middleware(req: NextRequest, event: NextFetchEvent) {
-  const hasClerk =
-    Boolean(process.env.CLERK_SECRET_KEY) &&
-    Boolean(process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY);
+  const hasClerk = clerkKeysReady();
   const dashboard = req.nextUrl.pathname.startsWith("/dashboard");
 
   if (!hasClerk) {
