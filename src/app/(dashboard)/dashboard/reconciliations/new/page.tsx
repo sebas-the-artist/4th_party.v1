@@ -1,10 +1,13 @@
 import Link from "next/link";
 import { IngestForm } from "@/components/ingest-form";
+import { SetupGuide } from "@/components/setup-guide";
+import { setupProgress } from "@/domain/setup";
 import { getScopedWorkspace } from "@/lib/workspace";
 
 export default async function NewReconciliationPage() {
-  const { location } = await getScopedWorkspace();
+  const { workspace, location } = await getScopedWorkspace();
   const locationId = location?.id ?? "";
+  const setup = setupProgress(workspace, location);
 
   return (
     <section>
@@ -16,12 +19,29 @@ export default async function NewReconciliationPage() {
           <p className="page-header__kicker">Ingest</p>
           <h1 className="page-header__title">Run the three files</h1>
           <p className="page-header__text">
-            Upload or paste POS, delivery, and bank CSVs for the selected store.
-            Quoted cells are fine. Amounts are dollars, stored as integer cents.
+            POS tickets, delivery payout, bank deposit — same week, same store.
+            Upload or paste. You send any dispute letter from your own inbox.
           </p>
         </div>
       </header>
-      {locationId ? <IngestForm locationId={locationId} /> : <p>Select a location first.</p>}
+
+      <SetupGuide setup={setup} />
+
+      {locationId ? (
+        setup.readyToMatch ? (
+          <IngestForm locationId={locationId} />
+        ) : (
+          <p className="empty-state">
+            Connect POS, at least one app, and the bank on Integrations first.
+            Then this form opens. That is how the three-way match knows what to
+            expect.
+          </p>
+        )
+      ) : (
+        <p className="empty-state">
+          Add a store on Locations, then come back to run a week.
+        </p>
+      )}
     </section>
   );
 }

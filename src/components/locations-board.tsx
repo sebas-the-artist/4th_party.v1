@@ -70,6 +70,9 @@ export function LocationsBoard({ cards }: { cards: LocationCard[] }) {
                         </button>
                       </form>
                     )}
+                    <Link className="data-table__open" href="/dashboard/integrations">
+                      Connect feeds
+                    </Link>
                     <Link className="data-table__open" href="/dashboard">
                       Overview
                     </Link>

@@ -81,7 +81,7 @@ export async function addLocationAction(
   const location = await addLocation(parsed.data);
   await writeStoreCookie(location.id);
   refresh();
-  redirect("/dashboard/locations");
+  redirect("/dashboard");
 }
 
 export type IngestState = { error?: string };

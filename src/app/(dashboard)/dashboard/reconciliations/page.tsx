@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { LiveFilterForm } from "@/components/live-filter-form";
+import { SetupGuide } from "@/components/setup-guide";
 import { StatusBadge } from "@/components/status-badge";
 import { formatCents } from "@/domain/money";
+import { setupProgress } from "@/domain/setup";
 import { MATCH_STATUSES, matchStatusLabel, platformLabel } from "@/domain/types";
 import { filterMatches, getScopedWorkspace, latestRunMatches } from "@/lib/workspace";
 
@@ -11,7 +13,8 @@ export default async function ReconciliationsPage({
   searchParams: Promise<{ platform?: string; status?: string; q?: string }>;
 }) {
   const params = await searchParams;
-  const { scoped } = await getScopedWorkspace();
+  const { workspace, scoped, location } = await getScopedWorkspace();
+  const setup = setupProgress(workspace, location);
   const run = scoped.runs[0];
   const rows = filterMatches(latestRunMatches(scoped), {
     platform: params.platform,
@@ -46,10 +49,14 @@ export default async function ReconciliationsPage({
               : "Run a week to see the ledger for this store."}
           </p>
         </div>
-        <Link className="button button--primary" href="/dashboard/reconciliations/new">
-          Paste CSVs
-        </Link>
+        {setup.readyToMatch ? (
+          <Link className="button button--primary" href="/dashboard/reconciliations/new">
+            Paste CSVs
+          </Link>
+        ) : null}
       </header>
+
+      <SetupGuide setup={setup} />
 
       <LiveFilterForm action="/dashboard/reconciliations">
         <label className="filter-bar__field">

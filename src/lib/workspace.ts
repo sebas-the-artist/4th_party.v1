@@ -24,6 +24,8 @@ import { currentOwnerId, currentUserProfile } from "@/lib/auth";
 import { buildDemoWorkspace } from "@/lib/demo-seed";
 import { sanitizeEmail } from "@/lib/security";
 import { getActiveLocation, scopeWorkspace } from "@/lib/store-context";
+import { defaultSourcesForLocation, ensureLocationSources } from "@/domain/feeds";
+import { setupProgress } from "@/domain/setup";
 import { insertWaitlistRow, loadWorkspace, saveWorkspace, updateWorkspace } from "@/lib/store";
 
 function createId(prefix: string) {
@@ -172,7 +174,8 @@ export async function getWorkspace(): Promise<Workspace> {
     return filled;
   }
 
-  const stored = workspace.contact ?? EMPTY_CONTACT;
+  const withFeeds = ensureLocationSources(workspace);
+  const stored = withFeeds.contact ?? EMPTY_CONTACT;
   const hasSavedContact = Boolean(stored.name || stored.title || stored.phone || stored.email);
   const profile = await currentUserProfile();
   const contact: ContactProfile = hasSavedContact
@@ -180,7 +183,7 @@ export async function getWorkspace(): Promise<Workspace> {
     : { ...EMPTY_CONTACT, name: profile.name, email: profile.email };
   const next = withContact(
     refreshLegacyDisputeCopy(
-      scrubProductNameFromLetters(applyGoodBurgerBrand({ ...workspace, contact })),
+      scrubProductNameFromLetters(applyGoodBurgerBrand({ ...withFeeds, contact })),
     ),
     contact,
   );
@@ -307,13 +310,19 @@ export function locationCards(workspace: Workspace, activeId?: string): Location
     const matches = workspace.matches.filter((match) => match.locationId === location.id);
     const open = matches.filter((match) => match.status !== "matched").length;
     const health = storeHealth(workspace, location.id);
+    const setup = setupProgress(workspace, location);
+    const healthLabel = !setup.readyToMatch
+      ? (setup.next?.title ?? "Finish setup")
+      : !setup.complete
+        ? "Ready to run a week"
+        : storeHealthLabel(health);
     const platforms = workspace.sources
       .filter((source) => source.locationId === location.id && source.kind === "delivery" && source.connected)
       .map((source) => platformLabel(source.platform ?? "doordash"));
     return {
       location,
-      health,
-      healthLabel: storeHealthLabel(health),
+      health: setup.readyToMatch ? health : "needs_attention",
+      healthLabel,
       platforms,
       openDiscrepancies: open,
       matchedRate:
@@ -372,6 +381,7 @@ export async function addLocation(input: unknown) {
   await updateWorkspace(ownerId, (workspace) => ({
     ...workspace,
     locations: [...workspace.locations, location],
+    sources: [...workspace.sources, ...defaultSourcesForLocation(location.id)],
   }));
 
   return location;

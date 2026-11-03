@@ -26,7 +26,14 @@ export const csvTextSchema = z.object({
 
 export const addLocationSchema = z.object({
   name: z.string().trim().min(2).max(80),
-  storeNumber: z.string().trim().min(1).max(12),
+  storeNumber: z.preprocess(
+    (value) => (typeof value === "string" ? value : ""),
+    z
+      .string()
+      .trim()
+      .max(12)
+      .transform((value) => value.replace(/^#/, "") || "001"),
+  ),
   address: z.string().trim().min(4).max(120),
   city: z.string().trim().min(2).max(80),
   state: z.string().trim().min(2).max(2),

@@ -8,14 +8,18 @@ export function AddLocationForm() {
 
   return (
     <form className="ingest-form" action={action}>
+      <p className="page-header__text">
+        Start with the restaurant people would put on a DoorDash dispute: name
+        and street. Store number is optional.
+      </p>
       <div className="ingest-form__meta">
         <label>
           Store name
           <input name="name" required placeholder="Good Burger" />
         </label>
         <label>
-          Store number
-          <input name="storeNumber" required placeholder="014" />
+          Store number <span className="filter-bar__hint">(optional)</span>
+          <input name="storeNumber" placeholder="014" />
         </label>
       </div>
       <label>
@@ -39,7 +43,7 @@ export function AddLocationForm() {
       {state.error ? <p className="form-error">{state.error}</p> : null}
       <div className="ingest-form__footer">
         <button className="button button--primary" type="submit">
-          Add location
+          Save store and continue
         </button>
       </div>
     </form>

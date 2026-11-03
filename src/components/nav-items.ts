@@ -5,6 +5,7 @@ export const DASHBOARD_NAV = [
   { href: "/dashboard/disputes", label: "Disputes" },
   { href: "/dashboard/locations", label: "Locations" },
   { href: "/dashboard/integrations", label: "Integrations" },
+  { href: "/dashboard/billing", label: "Billing" },
   { href: "/dashboard/settings", label: "Settings" },
 ] as const;
 

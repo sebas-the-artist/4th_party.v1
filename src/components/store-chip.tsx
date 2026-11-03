@@ -21,10 +21,6 @@ export function StoreChip({
     }
   }, [pathname]);
 
-  if (pathname === "/dashboard") {
-    return null;
-  }
-
   const active = cards.find((card) => card.active) ?? cards[0];
   if (!active) {
     return (
@@ -32,6 +28,10 @@ export function StoreChip({
         Add a location
       </Link>
     );
+  }
+
+  if (pathname === "/dashboard") {
+    return null;
   }
 
   return (

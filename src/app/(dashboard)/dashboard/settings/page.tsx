@@ -50,6 +50,19 @@ export default async function SettingsPage() {
       </section>
 
       <section className="section">
+        <h2 className="section__title">Billing</h2>
+        <article className="note-card">
+          <p className="page-header__text">
+            Membership is $49 per store per month plus 10% of refunds you mark
+            as received. Stripe is not on yet — see the scoreboard.
+          </p>
+          <Link className="button button--ghost" href="/dashboard/billing">
+            Open billing
+          </Link>
+        </article>
+      </section>
+
+      <section className="section">
         <h2 className="section__title">Support</h2>
         <article className="note-card">
           <SupportLink />

@@ -1,5 +1,7 @@
 import Link from "next/link";
+import { SetupGuide } from "@/components/setup-guide";
 import { StatusBadge } from "@/components/status-badge";
+import { setupProgress } from "@/domain/setup";
 import { platformLabel } from "@/domain/types";
 import { exceptionRows, getScopedWorkspace } from "@/lib/workspace";
 
@@ -9,7 +11,8 @@ export default async function ExceptionsPage({
   searchParams: Promise<{ platform?: string }>;
 }) {
   const params = await searchParams;
-  const { scoped } = await getScopedWorkspace();
+  const { workspace, scoped, location } = await getScopedWorkspace();
+  const setup = setupProgress(workspace, location);
   const platform = params.platform ?? "all";
   const exceptions = exceptionRows(scoped).filter((item) => {
     if (platform === "all") return true;
@@ -28,6 +31,8 @@ export default async function ExceptionsPage({
           </p>
         </div>
       </header>
+
+      <SetupGuide setup={setup} />
 
       <div className="chip-row" role="tablist" aria-label="Filter by platform">
         <Link
@@ -48,7 +53,11 @@ export default async function ExceptionsPage({
       </div>
 
       {exceptions.length === 0 ? (
-        <p className="empty-state">Nothing is short for that view. Enjoy the quiet.</p>
+        <p className="empty-state">
+          {setup.complete
+            ? "Nothing is short for that view. Enjoy the quiet."
+            : "Exceptions show up after you connect feeds and run a week."}
+        </p>
       ) : (
         <div className="attention-list">
           {exceptions.map((item) => (

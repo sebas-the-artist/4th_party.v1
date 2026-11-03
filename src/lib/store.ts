@@ -2,6 +2,7 @@ import { promises as fs } from "node:fs";
 import path from "node:path";
 import { workspaceSchema } from "@/domain/schemas";
 import { EMPTY_WORKSPACE, type WaitlistEntry, type Workspace } from "@/domain/types";
+import { loadClerkAccount, saveClerkAccount } from "@/lib/clerk-account";
 import { supabaseEnabled, supabaseServiceKey, supabaseUrl } from "@/lib/config";
 
 const DATA_DIR = path.join(process.cwd(), "data");
@@ -121,15 +122,35 @@ async function readJsonFile(filePath: string): Promise<unknown | null> {
   }
 }
 
+async function withClerkFallback(ownerId: string, workspace: Workspace): Promise<Workspace> {
+  if (workspace.locations.length > 0) {
+    return workspace;
+  }
+  const fromClerk = await loadClerkAccount(ownerId);
+  if (!fromClerk || fromClerk.locations.length === 0) {
+    return workspace;
+  }
+  return parseWorkspace(
+    {
+      ...workspace,
+      contact: fromClerk.contact,
+      locations: fromClerk.locations,
+      sources: fromClerk.sources,
+    },
+    ownerId,
+  );
+}
+
 export async function loadWorkspace(ownerId: string): Promise<Workspace> {
   if (supabaseEnabled) {
     const remote = await loadFromSupabase(ownerId);
     if (remote) {
-      return remote;
+      return withClerkFallback(ownerId, remote);
     }
     const empty = { ...EMPTY_WORKSPACE, ownerId };
-    await saveToSupabase(empty);
-    return empty;
+    const restored = await withClerkFallback(ownerId, empty);
+    await saveToSupabase(restored);
+    return restored;
   }
 
   const cached = memory.get(ownerId);
@@ -144,23 +165,28 @@ export async function loadWorkspace(ownerId: string): Promise<Workspace> {
       raw = await readJsonFile(LEGACY_FILE);
     }
     if (raw == null) {
-      const empty = { ...EMPTY_WORKSPACE, ownerId };
-      await saveWorkspace(empty);
-      return empty;
+      const restored = await withClerkFallback(ownerId, { ...EMPTY_WORKSPACE, ownerId });
+      await saveWorkspace(restored);
+      return restored;
     }
-    const parsed = parseWorkspace(raw, ownerId);
+    const parsed = await withClerkFallback(ownerId, parseWorkspace(raw, ownerId));
     memory.set(ownerId, parsed);
     return parsed;
   }
 
-  const empty = { ...EMPTY_WORKSPACE, ownerId };
-  memory.set(ownerId, empty);
-  return empty;
+  const restored = await withClerkFallback(ownerId, { ...EMPTY_WORKSPACE, ownerId });
+  memory.set(ownerId, restored);
+  return restored;
 }
 
 export async function saveWorkspace(workspace: Workspace): Promise<void> {
   const parsed = workspaceSchema.parse(workspace);
   memory.set(parsed.ownerId, parsed);
+  await saveClerkAccount(parsed.ownerId, {
+    contact: parsed.contact,
+    locations: parsed.locations,
+    sources: parsed.sources,
+  });
 
   if (supabaseEnabled) {
     await saveToSupabase(parsed);
