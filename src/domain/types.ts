@@ -103,6 +103,7 @@ export type MatchRecord = {
   receivedCents: number;
   varianceCents: number;
   recoveredCents: number;
+  recoveryEvidence: "none" | "merchant" | "payout" | "bank";
   summary: string;
   disputeText: string;
 };

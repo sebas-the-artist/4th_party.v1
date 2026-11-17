@@ -2,6 +2,7 @@ import { cookies } from "next/headers";
 import type { Location, Workspace } from "@/domain/types";
 
 export const STORE_COOKIE = "fp_store";
+export const SAMPLE_COOKIE = "fp_sample";
 
 export async function readStoreCookie(): Promise<string | undefined> {
   const jar = await cookies();
@@ -15,6 +16,30 @@ export async function writeStoreCookie(locationId: string) {
     sameSite: "lax",
     path: "/",
     maxAge: 60 * 60 * 24 * 180,
+  });
+}
+
+export async function isSamplePreview(): Promise<boolean> {
+  const jar = await cookies();
+  return jar.get(SAMPLE_COOKIE)?.value === "1";
+}
+
+export async function writeSampleCookie(enabled: boolean) {
+  const jar = await cookies();
+  if (enabled) {
+    jar.set(SAMPLE_COOKIE, "1", {
+      httpOnly: true,
+      sameSite: "lax",
+      path: "/",
+      maxAge: 60 * 60 * 8,
+    });
+    return;
+  }
+  jar.set(SAMPLE_COOKIE, "", {
+    httpOnly: true,
+    sameSite: "lax",
+    path: "/",
+    maxAge: 0,
   });
 }
 

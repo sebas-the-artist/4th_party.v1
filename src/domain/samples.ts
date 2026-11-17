@@ -1,11 +1,13 @@
-export const SAMPLE_POS_CSV = `ticket_id,order_id,ticket_at,gross,status
-T-2101,DD-5102,2026-10-14T18:04:00.000Z,54.00,completed
-T-2104,UE-3301,2026-10-14T19:22:00.000Z,33.50,completed`;
+export const SAMPLE_POS_CSV = `Check #,Date,Total,Status,Online Order ID
+T-2101,2026-10-14,54.00,Paid,DD-5102
+T-4418,2026-10-15,36.50,Paid,DD-4418`;
 
-export const SAMPLE_DELIVERY_CSV = `platform,order_id,payout_item_id,payout_batch_id,sold_at,gross,commission,adjustment,net,status,adjustment_reason
-doordash,DD-5102,DDI-1001,DD-W42,2026-10-14T18:04:00.000Z,54.00,13.50,0.00,40.50,paid,
-uber_eats,UE-3301,UEI-1001,UE-W42,2026-10-14T19:22:00.000Z,33.50,10.05,-4.00,19.45,adjusted,Error charge`;
+export const SAMPLE_DELIVERY_CSV = `Transaction ID,Order ID,Timestamp,Transaction Type,Subtotal,Commission,Error Charge,Net Payout,Description
+DDT-1001,DD-5102,2026-10-14,Delivery,54.00,13.50,0.00,40.50,
+DDT-1002,DD-4418,2026-10-15,Error Charge,36.50,0.00,-36.50,-36.50,Order never arrived
+DDT-1003,DD-4420,2026-10-16,Error Charge,8.00,0.00,-8.00,-8.00,Missing item
+DDT-1004,UE-9188,2026-10-16,Delivery,22.00,6.60,0.00,15.40,`;
 
-export const SAMPLE_BANK_CSV = `platform,payout_batch_id,posted_on,amount,account,memo
-doordash,DD-W42,2026-10-16,40.50,••••4419,DOORDASH PAYOUT DD-W42
-uber_eats,UE-W42,2026-10-16,19.45,••••4419,UBER EATS PAYOUT UE-W42`;
+export const SAMPLE_BANK_CSV = `Date,Amount,Description
+2026-10-16,40.50,DOORDASH PAYOUT
+2026-10-16,15.40,UBER EATS PAYOUT`;

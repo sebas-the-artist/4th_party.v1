@@ -20,8 +20,8 @@ export default async function LocationsPage() {
             {cards.length === 0 ? "Add the first store" : "Stores on this account"}
           </h1>
           <p className="page-header__text">
-            Each store can have its own DoorDash, Uber, and bank. Membership
-            later bills per store that stays active. Nothing is charged yet.
+            Each store has its own apps. Membership is $39 for the first door,
+            $29 for each extra. Nothing is charged yet.
           </p>
         </div>
       </header>

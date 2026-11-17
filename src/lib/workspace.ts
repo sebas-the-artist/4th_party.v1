@@ -23,10 +23,37 @@ import { matchStatusLabel, platformLabel } from "@/domain/types";
 import { currentOwnerId, currentUserProfile } from "@/lib/auth";
 import { buildDemoWorkspace } from "@/lib/demo-seed";
 import { sanitizeEmail } from "@/lib/security";
-import { getActiveLocation, scopeWorkspace } from "@/lib/store-context";
+import {
+  getActiveLocation,
+  isSamplePreview,
+  scopeWorkspace,
+  writeSampleCookie,
+} from "@/lib/store-context";
 import { defaultSourcesForLocation, ensureLocationSources } from "@/domain/feeds";
-import { setupProgress } from "@/domain/setup";
-import { insertWaitlistRow, loadWorkspace, saveWorkspace, updateWorkspace } from "@/lib/store";
+import { confirmRecoveriesFromPayout } from "@/domain/recovery";
+import { disputeDaysLeft, setupProgress } from "@/domain/setup";
+import { insertWaitlistRow, loadWorkspace, saveWorkspace, updateWorkspace as persistWorkspace } from "@/lib/store";
+
+const sampleByOwner = new Map<string, Workspace>();
+
+function sampleFromReal(ownerId: string, real: Workspace): Workspace {
+  const seeded = buildDemoWorkspace(ownerId);
+  seeded.waitlist = real.waitlist;
+  return withContact(seeded, real.contact ?? EMPTY_CONTACT);
+}
+
+async function mutateWorkspace(
+  ownerId: string,
+  updater: (workspace: Workspace) => Workspace | Promise<Workspace>,
+): Promise<Workspace> {
+  if (await isSamplePreview()) {
+    const current = sampleByOwner.get(ownerId) ?? sampleFromReal(ownerId, await loadWorkspace(ownerId));
+    const next = { ...(await updater(current)), ownerId };
+    sampleByOwner.set(ownerId, next);
+    return next;
+  }
+  return persistWorkspace(ownerId, updater);
+}
 
 function createId(prefix: string) {
   return `${prefix}_${crypto.randomUUID().replace(/-/g, "").slice(0, 10)}`;
@@ -160,6 +187,16 @@ function refreshLegacyDisputeCopy(workspace: Workspace): Workspace {
 
 export async function getWorkspace(): Promise<Workspace> {
   const ownerId = await currentOwnerId();
+  if (await isSamplePreview()) {
+    const cached = sampleByOwner.get(ownerId);
+    if (cached) {
+      return cached;
+    }
+    const sample = sampleFromReal(ownerId, await loadWorkspace(ownerId));
+    sampleByOwner.set(ownerId, sample);
+    return sample;
+  }
+
   const workspace = await loadWorkspace(ownerId);
   const needsDemoUpgrade =
     ownerId === "demo" &&
@@ -205,15 +242,15 @@ export async function getScopedWorkspace(): Promise<{
   return { workspace, scoped, location };
 }
 
-export async function resetDemoWorkspace() {
+export async function enterSamplePreview() {
   const ownerId = await currentOwnerId();
-  const current = await loadWorkspace(ownerId);
-  const seeded = buildDemoWorkspace(ownerId);
-  seeded.waitlist = current.waitlist;
-  seeded.contact = current.contact ?? EMPTY_CONTACT;
-  const filled = withContact(seeded, seeded.contact);
-  await saveWorkspace(filled);
-  return filled;
+  const real = await loadWorkspace(ownerId);
+  sampleByOwner.set(ownerId, sampleFromReal(ownerId, real));
+  await writeSampleCookie(true);
+}
+
+export async function exitSamplePreview() {
+  await writeSampleCookie(false);
 }
 
 export type StoreHealth = "matched" | "needs_attention" | "active";
@@ -246,7 +283,9 @@ export type ExceptionRow = {
   variance: string;
   varianceCents: number;
   recoveredCents: number;
+  recoveryEvidence: MatchRecord["recoveryEvidence"];
   summary: string;
+  daysLeft?: number;
 };
 
 export function exceptionRows(workspace: Workspace): ExceptionRow[] {
@@ -266,7 +305,11 @@ export function exceptionRows(workspace: Workspace): ExceptionRow[] {
       variance: formatCents(match.varianceCents),
       varianceCents: match.varianceCents,
       recoveredCents: match.recoveredCents,
+      recoveryEvidence: match.recoveryEvidence,
       summary: match.summary,
+      daysLeft: disputeDaysLeft(
+        workspace.deliveryItems.find((item) => item.id === match.deliveryItemId)?.soldAt,
+      ),
     }));
 }
 
@@ -276,7 +319,9 @@ export function dashboardSummary(workspace: Workspace) {
   const matchedCount = workspace.matches.filter((match) => match.status === "matched").length;
   const total = workspace.matches.length;
   const netVarianceCents = exceptions.reduce((totalVariance, row) => totalVariance + row.varianceCents, 0);
-  const recoveredCents = workspace.matches.reduce((sum, match) => sum + match.recoveredCents, 0);
+  const recoveredCents = workspace.matches
+    .filter((match) => match.recoveryEvidence === "payout" || match.recoveryEvidence === "bank")
+    .reduce((sum, match) => sum + match.recoveredCents, 0);
   const location = workspace.locations[0];
 
   return {
@@ -314,7 +359,7 @@ export function locationCards(workspace: Workspace, activeId?: string): Location
     const healthLabel = !setup.readyToMatch
       ? (setup.next?.title ?? "Finish setup")
       : !setup.complete
-        ? "Ready to run a week"
+        ? "Ready to upload a payout"
         : storeHealthLabel(health);
     const platforms = workspace.sources
       .filter((source) => source.locationId === location.id && source.kind === "delivery" && source.connected)
@@ -338,7 +383,7 @@ export async function addWaitlistEntry(input: { email: string; restaurant: strin
     restaurant: input.restaurant,
   });
 
-  const workspace = await updateWorkspace("demo", (current) => {
+  const workspace = await persistWorkspace("demo", (current) => {
     const already = current.waitlist.some((entry) => entry.email === parsed.email);
     if (already) {
       return current;
@@ -378,7 +423,7 @@ export async function addLocation(input: unknown) {
     billingActive: true,
   };
 
-  await updateWorkspace(ownerId, (workspace) => ({
+  await mutateWorkspace(ownerId, (workspace) => ({
     ...workspace,
     locations: [...workspace.locations, location],
     sources: [...workspace.sources, ...defaultSourcesForLocation(location.id)],
@@ -391,29 +436,37 @@ export async function runFromCsv(input: {
   locationId: string;
   periodStart: string;
   periodEnd: string;
-  posCsv: string;
+  posCsv?: string;
   deliveryCsv: string;
-  bankCsv: string;
+  bankCsv?: string;
+  defaultPlatform?: "doordash" | "uber_eats" | "grubhub";
 }) {
   const parsed = csvTextSchema.parse(input);
   const runId = createId("run");
   const ownerId = await currentOwnerId();
 
-  return updateWorkspace(ownerId, (workspace) => {
+  return mutateWorkspace(ownerId, (workspace) => {
     const location = workspace.locations.find((item) => item.id === parsed.locationId);
     if (!location) {
       throw new Error("Unknown location.");
     }
 
-    const posOrders = parsePosCsv(parsed.posCsv, parsed.locationId);
-    const deliveryItems = parseDeliveryCsv(parsed.deliveryCsv, parsed.locationId);
-    const bankDeposits = parseBankCsv(parsed.bankCsv, parsed.locationId);
+    const defaultPlatform =
+      parsed.defaultPlatform ??
+      workspace.sources.find(
+        (source) => source.locationId === parsed.locationId && source.kind === "delivery" && source.connected,
+      )?.platform ??
+      "doordash";
+    const posOrders = parsePosCsv(parsed.posCsv ?? "", parsed.locationId);
+    const deliveryItems = parseDeliveryCsv(parsed.deliveryCsv, parsed.locationId, { defaultPlatform });
+    const bankDeposits = parseBankCsv(parsed.bankCsv ?? "", parsed.locationId, { defaultPlatform });
+    const confirmed = confirmRecoveriesFromPayout(workspace, deliveryItems);
     const matches = runMatchingEngine({
       runId,
       locationId: parsed.locationId,
       location,
-      contact: workspace.contact,
-      sources: workspace.sources.filter((source) => source.locationId === parsed.locationId),
+      contact: confirmed.contact,
+      sources: confirmed.sources.filter((source) => source.locationId === parsed.locationId),
       posOrders,
       deliveryItems,
       bankDeposits,
@@ -427,10 +480,10 @@ export async function runFromCsv(input: {
     const sources = workspace.sources.filter((source) => source.locationId === parsed.locationId);
 
     return {
-      ...workspace,
-      posOrders: [...workspace.posOrders, ...posOrders],
-      deliveryItems: [...workspace.deliveryItems, ...deliveryItems],
-      bankDeposits: [...workspace.bankDeposits, ...bankDeposits],
+      ...confirmed,
+      posOrders: [...confirmed.posOrders, ...posOrders],
+      deliveryItems: [...confirmed.deliveryItems, ...deliveryItems],
+      bankDeposits: [...confirmed.bankDeposits, ...bankDeposits],
       runs: [
         {
           id: runId,
@@ -441,9 +494,9 @@ export async function runFromCsv(input: {
           netVarianceCents,
           createdAt,
         },
-        ...workspace.runs,
+        ...confirmed.runs,
       ],
-      matches: [...matches, ...workspace.matches],
+      matches: [...matches, ...confirmed.matches],
       disputes: [
         ...matches
           .filter((match) => match.status !== "matched")
@@ -458,7 +511,7 @@ export async function runFromCsv(input: {
             toEmail: supportEmailFor(sources, match.platform),
             updatedAt: createdAt,
           })),
-        ...workspace.disputes,
+        ...confirmed.disputes,
       ],
     };
   });
@@ -481,7 +534,7 @@ export function getMatchDetail(workspace: Workspace, matchId: string) {
 
 export async function markDispute(matchId: string, status: DisputeStatus) {
   const ownerId = await currentOwnerId();
-  return updateWorkspace(ownerId, (workspace) => ({
+  return mutateWorkspace(ownerId, (workspace) => ({
     ...workspace,
     disputes: workspace.disputes.map((dispute) => {
       if (dispute.matchId !== matchId) {
@@ -502,7 +555,7 @@ export async function markDispute(matchId: string, status: DisputeStatus) {
 export async function saveContact(input: ContactProfile) {
   const parsed = contactSchema.parse(input);
   const ownerId = await currentOwnerId();
-  return updateWorkspace(ownerId, (workspace) => withContact(workspace, parsed));
+  return mutateWorkspace(ownerId, (workspace) => withContact(workspace, parsed));
 }
 
 export async function saveDisputeDraft(input: {
@@ -516,7 +569,7 @@ export async function saveDisputeDraft(input: {
   const blocked =
     hasLetterBlanks(input.body) &&
     (input.status === "ready" || input.status === "sent" || input.status === "awaiting");
-  return updateWorkspace(ownerId, (workspace) => ({
+  return mutateWorkspace(ownerId, (workspace) => ({
     ...workspace,
     disputes: workspace.disputes.map((dispute) =>
       dispute.id === input.disputeId
@@ -535,7 +588,7 @@ export async function saveDisputeDraft(input: {
 
 export async function resolveMatch(matchId: string, outcome: "approved" | "denied" = "approved") {
   const ownerId = await currentOwnerId();
-  return updateWorkspace(ownerId, (workspace) => {
+  return mutateWorkspace(ownerId, (workspace) => {
     const current = workspace.matches.find((match) => match.id === matchId);
     const recovered = current ? Math.abs(current.varianceCents) : 0;
     return {
@@ -546,8 +599,9 @@ export async function resolveMatch(matchId: string, outcome: "approved" | "denie
             ? {
                 ...match,
                 status: "matched" as const,
-                summary: `Refund received. Recovered ${formatCents(recovered)}.`,
+                summary: `Merchant marked recovered ${formatCents(recovered)}. Not billed until a later payout file confirms it.`,
                 recoveredCents: recovered,
+                recoveryEvidence: "merchant" as const,
                 varianceCents: 0,
                 receivedCents: match.expectedCents,
               }
@@ -580,7 +634,7 @@ export function sourceCards(workspace: Workspace) {
 
 export async function toggleSource(sourceId: string) {
   const ownerId = await currentOwnerId();
-  return updateWorkspace(ownerId, (workspace) => ({
+  return mutateWorkspace(ownerId, (workspace) => ({
     ...workspace,
     sources: workspace.sources.map((source) =>
       source.id === sourceId ? { ...source, connected: !source.connected } : source,
@@ -614,8 +668,14 @@ export function filterMatches(
         return false;
       }
     }
-    if (filters.status && filters.status !== "all" && match.status !== filters.status) {
-      return false;
+    if (filters.status && filters.status !== "all") {
+      if (filters.status === "flags") {
+        if (match.status === "matched") {
+          return false;
+        }
+      } else if (match.status !== filters.status) {
+        return false;
+      }
     }
     if (filters.query) {
       const haystack = `${match.summary} ${match.disputeText} ${match.platform}`.toLowerCase();

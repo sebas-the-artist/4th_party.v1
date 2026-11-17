@@ -32,7 +32,7 @@ export default async function MatchDetailPage({
     <section>
       {recovered > 0 ? <WinBurst recoveredCents={recovered} /> : null}
       <Link className="page-back" href="/dashboard/reconciliations">
-        ← Reconciliations
+        ← Ledger
       </Link>
       <header className="page-header">
         <div>
@@ -40,11 +40,19 @@ export default async function MatchDetailPage({
           <h1 className="page-header__title">{platformLabel(match.platform)}</h1>
           <p className="page-header__text">{match.summary}</p>
         </div>
-        <StatusBadge status={match.status} recoveredCents={match.recoveredCents} />
+        <StatusBadge
+          status={match.status}
+          recoveredCents={match.recoveredCents}
+          recoveryEvidence={match.recoveryEvidence}
+        />
       </header>
 
       {match.recoveredCents > 0 ? (
-        <p className="win-note">Refund received. {formatCents(match.recoveredCents)} recovered.</p>
+        <p className="win-note">
+          {match.recoveryEvidence === "payout" || match.recoveryEvidence === "bank"
+            ? `Confirmed on a later file. ${formatCents(match.recoveredCents)} is billable.`
+            : `Merchant marked ${formatCents(match.recoveredCents)} recovered. We bill it only after the next payout export shows the reversal.`}
+        </p>
       ) : null}
 
       <div className="detail-grid">
@@ -108,7 +116,7 @@ export default async function MatchDetailPage({
                   <input type="hidden" name="matchId" value={match.id} />
                   <input type="hidden" name="outcome" value="approved" />
                   <button className="button button--primary" type="submit">
-                    Mark refund received
+                    I think the cash came back
                   </button>
                 </form>
                 <form action={resolveMatchAction}>

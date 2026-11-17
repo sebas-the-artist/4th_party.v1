@@ -132,6 +132,10 @@ function discrepancyLabel(status: MatchRecord["status"]): string {
   }
 }
 
+function owedCents(match: Pick<MatchRecord, "expectedCents" | "receivedCents" | "varianceCents">) {
+  return Math.max(match.expectedCents - match.receivedCents, Math.abs(match.varianceCents), 0);
+}
+
 function story(input: {
   match: Pick<
     MatchRecord,
@@ -144,29 +148,57 @@ function story(input: {
 }): string {
   const expected = formatCents(input.match.expectedCents);
   const received = formatCents(input.match.receivedCents);
-  const amount = formatCents(Math.abs(input.match.varianceCents));
+  const amount = formatCents(owedCents(input.match));
   const ticket = input.ticketId;
+  const orderId = input.delivery?.orderId ?? "this order";
+  const reason = input.delivery?.adjustmentReason?.trim();
+  const reasonBit = reason ? ` Payout note: “${reason}.”` : "";
 
   if (input.match.status === "unpaid_cancellation") {
+    if (!input.pos) {
+      return [
+        `${input.platform} order ${orderId} was marked canceled or undelivered.${reasonBit}`,
+        `If a marketplace courier took the food, transport is not the restaurant’s liability.`,
+        `This line should have paid ${expected}. It paid ${received}. ${amount} is still owed.`,
+        `Please reverse the deduction per merchant transport policy, or send the proof that the restaurant caused a never-arrived.`,
+      ].join(" ");
+    }
     return [
-      `The POS ticket ${ticket} was completed and the order was prepared.`,
-      `${input.platform} later marked the order as canceled.`,
-      `The payout for this order was ${received}; expected payment was ${expected}.`,
-      `Please review and reverse the ${amount} deduction, or issue the appropriate payment for the completed order.`,
+      `POS ticket ${ticket} was completed and the food was prepared.`,
+      `${input.platform} later marked ${orderId} as canceled.${reasonBit}`,
+      `Expected payment ${expected}. Payout paid ${received}. Please reverse the ${amount} take, or pay the completed ticket.`,
     ].join(" ");
   }
 
-  if (input.match.status === "short_pay" || input.match.status === "fee_error") {
+  if (input.match.status === "fee_error") {
     return [
-      `Expected net ${expected}. Received ${received}.`,
-      `Please review the commission and adjustments on this order and reverse the ${amount} shortfall, or issue the appropriate payment.`,
+      `Commission on ${orderId} does not match the contracted rate.${reasonBit}`,
+      `Expected net ${expected}. Received ${received}. Please reverse the ${amount} fee error.`,
+    ].join(" ");
+  }
+
+  if (input.match.status === "short_pay") {
+    return [
+      `${input.platform} underpaid ${orderId}.${reasonBit}`,
+      `Expected net ${expected} after marketplace commission. Received ${received}.`,
+      `Please reverse the ${amount} shortfall, or show the adjustment that explains it.`,
     ].join(" ");
   }
 
   if (input.match.status === "unmatched_refund") {
+    const missingItem = /missing item|didn't receive all|incomplete order/i.test(reason ?? "");
+    if (!input.pos) {
+      return [
+        `${input.platform} posted ${missingItem ? "a missing-item clawback" : "a refund / error charge"} on ${orderId}.${reasonBit}`,
+        `Expected ${expected}. This line paid ${received}. Restore ${amount}.`,
+        missingItem
+          ? `If this is a missing-item claim, reverse the take unless you have item-level proof. A customer note is not enough.`
+          : `Please send the authorization that supports this clawback, or restore the funds.`,
+      ].join(" ");
+    }
     return [
-      `A refund or clawback hit the payout, but POS ticket ${ticket} is still completed.`,
-      `Please review and restore ${amount}, or provide the matching refund authorization.`,
+      `A ${missingItem ? "missing-item clawback" : "refund / error charge"} hit ${orderId}, but POS ticket ${ticket} is still completed.${reasonBit}`,
+      `Expected ${expected}. Received ${received}. Please restore ${amount}, or provide the matching refund authorization.`,
     ].join(" ");
   }
 
@@ -174,7 +206,7 @@ function story(input: {
     return [
       `The payout batch expected ${expected} to land in the restaurant account.`,
       `The bank deposit received was ${received}.`,
-      `Please review and confirm the missing transfer or the offsetting adjustment.`,
+      `Please confirm the missing ${amount} transfer or the offsetting adjustment.`,
     ].join(" ");
   }
 
@@ -195,7 +227,7 @@ export function buildDisputeText(input: {
   const platform = platformLabel(platformKey === "bank" ? "doordash" : platformKey);
   const orderId = input.delivery?.orderId ?? input.pos?.platformOrderId ?? "unknown";
   const ticketId = input.pos?.ticketId ?? "n/a";
-  const amount = formatCents(Math.abs(input.match.varianceCents));
+  const amount = formatCents(owedCents(input.match));
   const storeName = input.location?.name ?? "[Business name]";
   const kind = discrepancyLabel(input.match.status);
   const orderDate = niceDate(input.delivery?.soldAt ?? input.pos?.ticketAt);
@@ -218,7 +250,7 @@ export function buildDisputeText(input: {
     input.delivery?.adjustmentReason
       ? `- Reported adjustment: ${input.delivery.adjustmentReason}`
       : null,
-    `- Disputed amount ${amount} from POS, payout, and bank records`,
+    `- Disputed amount ${amount} from payout records${ticketId !== "n/a" ? ", POS, and bank where provided" : ""}`,
   ].filter((line): line is string => Boolean(line));
 
   const portal =
@@ -231,7 +263,7 @@ export function buildDisputeText(input: {
     "",
     `Hello ${deskName(platformKey)},`,
     "",
-    `I am requesting a review of ${/^[aeiou]/i.test(kind) ? "an" : "a"} ${kind.toLowerCase()} on the order below.`,
+    `I am requesting a review of ${/^[aeiou]/i.test(kind) ? "an" : "a"} ${kind.toLowerCase()} for ${amount} on the order below.`,
     "",
     ...facts,
     "",

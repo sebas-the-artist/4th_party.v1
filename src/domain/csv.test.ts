@@ -20,3 +20,15 @@ grubhub,GH-1,GHI-1,GH-W1,2026-10-14T12:00:00.000Z,20.00,5.00,0.00,15.00,canceled
   assert.equal(row.platform, "grubhub");
   assert.equal(row.adjustmentReason, "Customer canceled, after pickup");
 });
+
+test("maps a DoorDash-style payout export without our column names", () => {
+  const csv = `Transaction ID,Order ID,Timestamp,Transaction Type,Subtotal,Commission,Error Charge,Net Payout,Description
+DDT-1,DD-4418,2026-10-15,Error Charge,36.50,0.00,-36.50,-36.50,Order never arrived
+DDT-2,UE-9188,2026-10-16,Delivery,22.00,6.60,0.00,15.40,`;
+  const rows = parseDeliveryCsv(csv, "loc_1");
+  assert.equal(rows[0]?.orderId, "DD-4418");
+  assert.equal(rows[0]?.status, "canceled");
+  assert.equal(rows[0]?.netCents, -3650);
+  assert.equal(rows[1]?.platform, "uber_eats");
+  assert.equal(rows[1]?.status, "paid");
+});

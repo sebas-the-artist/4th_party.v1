@@ -1,11 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { BrandMark } from "@/components/brand-mark";
 import {
   applyTheme,
   DEFAULT_PALETTE_ID,
   DEFAULT_SCHEME,
   PALETTES,
+  PALETTE_GROUPS,
   PALETTE_STORAGE_KEY,
   SCHEME_STORAGE_KEY,
   type ColorScheme,
@@ -43,6 +45,8 @@ export function ThemeControls({ variant }: { variant: "dock" | "panel" }) {
     localStorage.setItem(SCHEME_STORAGE_KEY, nextScheme);
   }
 
+  const selected = PALETTES.find((palette) => palette.id === paletteId) ?? PALETTES[0];
+
   if (!ready) {
     return <div className={`theme-controls theme-controls--${variant}`} />;
   }
@@ -68,32 +72,42 @@ export function ThemeControls({ variant }: { variant: "dock" | "panel" }) {
         </button>
       </div>
 
-      <div
-        className="theme-controls__swatches"
-        role="radiogroup"
-        aria-label="Color palette"
-      >
-        {PALETTES.map((palette) => {
-          const selected = palette.id === paletteId;
-          return (
-            <button
-              key={palette.id}
-              type="button"
-              role="radio"
-              aria-checked={selected}
-              aria-label={palette.name}
-              title={palette.name}
-              className={`theme-swatch ${selected ? "theme-swatch--active" : ""}`}
-              style={{
-                background: `conic-gradient(from 210deg, ${palette.light} 0 46%, ${palette.dark} 46% 74%, ${palette.accent} 74% 100%)`,
-              }}
-              onClick={() => persist(palette.id, scheme)}
-            >
-              <span className="theme-swatch__name">{palette.name}</span>
-            </button>
-          );
-        })}
-      </div>
+      {PALETTE_GROUPS.map((group) => (
+        <div key={group.id} className="theme-controls__group">
+          <p className="theme-controls__group-label">{group.label}</p>
+          <div className="theme-controls__swatches" role="radiogroup" aria-label={group.label}>
+            {PALETTES.filter((palette) => palette.group === group.id).map((palette) => {
+              const isSelected = palette.id === paletteId;
+              return (
+                <button
+                  key={palette.id}
+                  type="button"
+                  role="radio"
+                  aria-checked={isSelected}
+                  aria-label={palette.name}
+                  title={palette.name}
+                  className={`theme-swatch ${isSelected ? "theme-swatch--active" : ""}`}
+                  style={{
+                    ["--accent" as string]: palette.accent,
+                    ["--swatch-ink" as string]: palette.dark,
+                    ["--theme-light" as string]: palette.light,
+                  }}
+                  onClick={() => persist(palette.id, scheme)}
+                >
+                  <BrandMark />
+                  <span className="theme-swatch__name">{palette.name}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      ))}
+
+      {selected ? (
+        <p className="theme-controls__blurb">
+          <strong>{selected.name}.</strong> {selected.blurb}
+        </p>
+      ) : null}
     </div>
   );
 }

@@ -5,17 +5,17 @@ import { setupProgress } from "@/domain/setup";
 import { getScopedWorkspace, sourceCards } from "@/lib/workspace";
 
 const KIND_COPY = {
-  pos: {
-    title: "POS",
-    text: "Tickets prove the food was made. Connect the system that prints the ticket.",
-  },
   delivery: {
-    title: "Delivery apps",
-    text: "Turn on every app this store actually sells on. Leave the rest off.",
+    title: "Delivery apps — start here",
+    text: "Turn on every app this store sells on. Then upload that app’s payout CSV. Live APIs come later.",
+  },
+  pos: {
+    title: "POS — optional",
+    text: "Tickets prove the food was made. Add Toast or Square when you want that in the letter. Not required to find clawbacks.",
   },
   bank: {
-    title: "Bank",
-    text: "The deposit is the third leg. Without it we cannot tell if DoorDash actually paid you.",
+    title: "Bank — optional",
+    text: "The deposit proves the payout landed. Add it when you want the third leg. Not a gate.",
   },
 } as const;
 
@@ -24,7 +24,7 @@ export default async function IntegrationsPage() {
   const sources = sourceCards(scoped);
   const setup = setupProgress(workspace, location);
 
-  const groups = (["pos", "delivery", "bank"] as const).map((kind) => ({
+  const groups = (["delivery", "pos", "bank"] as const).map((kind) => ({
     kind,
     ...KIND_COPY[kind],
     items: sources.filter((source) => source.kind === kind),
@@ -39,13 +39,14 @@ export default async function IntegrationsPage() {
             {location ? `${location.name} feeds` : "Connect the three legs"}
           </h1>
           <p className="page-header__text">
-            Live APIs come later. For now these toggles tell the matcher which
-            POS, apps, and bank to expect when you paste CSVs.
+            Flip DoorDash / Uber / Grubhub first. Then upload the payout file
+            the morning it appears — not next Sunday. POS and bank are extra
+            proof, not a gate.
           </p>
         </div>
       </header>
 
-      <SetupGuide setup={setup} />
+      <SetupGuide setup={setup} variant="compact" />
 
       {sources.length === 0 ? (
         <p className="empty-state">

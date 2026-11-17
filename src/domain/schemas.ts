@@ -19,9 +19,10 @@ export const csvTextSchema = z.object({
   locationId: z.string().min(1),
   periodStart: z.string().min(8),
   periodEnd: z.string().min(8),
-  posCsv: z.string().trim().min(1, "Paste a POS CSV."),
-  deliveryCsv: z.string().trim().min(1, "Paste a DoorDash / Uber CSV."),
-  bankCsv: z.string().trim().min(1, "Paste a bank CSV."),
+  posCsv: z.string().trim().optional().default(""),
+  deliveryCsv: z.string().trim().min(1, "Paste or upload a DoorDash / Uber / Grubhub payout CSV."),
+  bankCsv: z.string().trim().optional().default(""),
+  defaultPlatform: z.enum(PLATFORMS).optional(),
 });
 
 export const addLocationSchema = z.object({
@@ -163,6 +164,7 @@ export const workspaceSchema = z.object({
       receivedCents: cents,
       varianceCents: cents,
       recoveredCents: cents.nonnegative().default(0),
+      recoveryEvidence: z.enum(["none", "merchant", "payout", "bank"]).default("none"),
       summary: z.string(),
       disputeText: z.string(),
     }),

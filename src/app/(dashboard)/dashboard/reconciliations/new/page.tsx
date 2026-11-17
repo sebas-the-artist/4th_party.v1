@@ -8,39 +8,40 @@ export default async function NewReconciliationPage() {
   const { workspace, location } = await getScopedWorkspace();
   const locationId = location?.id ?? "";
   const setup = setupProgress(workspace, location);
+  const defaultPlatform = workspace.sources.find(
+    (source) => source.locationId === locationId && source.kind === "delivery" && source.connected,
+  )?.platform;
 
   return (
     <section>
       <Link className="page-back" href="/dashboard/reconciliations">
-        ← Reconciliations
+        ← Ledger
       </Link>
       <header className="page-header">
         <div>
-          <p className="page-header__kicker">Ingest</p>
-          <h1 className="page-header__title">Run the three files</h1>
+          <p className="page-header__kicker">Payout file</p>
+          <h1 className="page-header__title">Drop the export as soon as it exists</h1>
           <p className="page-header__text">
-            POS tickets, delivery payout, bank deposit — same week, same store.
-            Upload or paste. You send any dispute letter from your own inbox.
+            One payout CSV is enough. Do not sit on it until Sunday — platforms
+            give about 30 days. POS and bank are optional. Letters still go from
+            your inbox.
           </p>
         </div>
       </header>
 
-      <SetupGuide setup={setup} />
+      <SetupGuide setup={setup} variant="compact" />
 
       {locationId ? (
         setup.readyToMatch ? (
-          <IngestForm locationId={locationId} />
+          <IngestForm locationId={locationId} defaultPlatform={defaultPlatform} />
         ) : (
           <p className="empty-state">
-            Connect POS, at least one app, and the bank on Integrations first.
-            Then this form opens. That is how the three-way match knows what to
-            expect.
+            Add a store and turn on at least one app on Feeds. Then this
+            upload opens.
           </p>
         )
       ) : (
-        <p className="empty-state">
-          Add a store on Locations, then come back to run a week.
-        </p>
+        <p className="empty-state">Add a store on Locations, then come back.</p>
       )}
     </section>
   );

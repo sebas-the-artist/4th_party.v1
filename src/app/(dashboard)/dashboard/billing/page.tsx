@@ -1,6 +1,9 @@
 import Link from "next/link";
+import { recoveryTotals } from "@/domain/recovery";
 import {
-  MEMBERSHIP_CENTS_PER_LOCATION,
+  DISPUTE_WINDOW_DAYS,
+  MEMBERSHIP_ADDITIONAL_CENTS,
+  MEMBERSHIP_FIRST_CENTS,
   RECOVERY_FEE_BPS,
   membershipCents,
   recoveryFeeCents,
@@ -10,10 +13,13 @@ import { getScopedWorkspace } from "@/lib/workspace";
 
 export default async function BillingPage() {
   const { workspace } = await getScopedWorkspace();
-  const activeLocations = workspace.locations.filter((location) => location.billingActive);
-  const recoveredCents = workspace.matches.reduce((sum, match) => sum + match.recoveredCents, 0);
-  const membership = membershipCents(Math.max(activeLocations.length, workspace.locations.length));
-  const recoveryFee = recoveryFeeCents(recoveredCents);
+  const count = Math.max(
+    workspace.locations.filter((location) => location.billingActive).length,
+    workspace.locations.length,
+  );
+  const { claimed, confirmed } = recoveryTotals(workspace.matches);
+  const membership = membershipCents(count);
+  const recoveryFee = recoveryFeeCents(confirmed);
   const estimated = membership + recoveryFee;
 
   return (
@@ -23,9 +29,9 @@ export default async function BillingPage() {
           <p className="page-header__kicker">Billing</p>
           <h1 className="page-header__title">How Dishpute gets paid</h1>
           <p className="page-header__text">
-            Nothing is charged yet. When Stripe is on, you pay a membership per
-            store plus a cut of money you actually recovered — not of the
-            variance we flagged.
+            First store {formatCents(MEMBERSHIP_FIRST_CENTS)} / month. Each extra
+            store {formatCents(MEMBERSHIP_ADDITIONAL_CENTS)}. Plus {RECOVERY_FEE_BPS / 100}%
+            of recoveries a later payout file confirms. Stripe is not on yet.
           </p>
         </div>
       </header>
@@ -36,42 +42,78 @@ export default async function BillingPage() {
           <p className="metric-card__value">{workspace.locations.length}</p>
         </article>
         <article className="metric-card">
-          <p className="metric-card__label">Membership / month</p>
-          <p className="metric-card__value money">
-            {formatCents(MEMBERSHIP_CENTS_PER_LOCATION)}
-            <span className="attention-row__meta"> / store</span>
-          </p>
+          <p className="metric-card__label">Membership this month</p>
+          <p className="metric-card__value money">{formatCents(membership)}</p>
         </article>
         <article className="metric-card">
-          <p className="metric-card__label">Recovery fee</p>
-          <p className="metric-card__value">{RECOVERY_FEE_BPS / 100}%</p>
+          <p className="metric-card__label">Claimed by merchant</p>
+          <p className="metric-card__value money">{formatCents(claimed)}</p>
         </article>
         <article className="metric-card">
-          <p className="metric-card__label">Marked recovered</p>
-          <p className="metric-card__value money">{formatCents(recoveredCents)}</p>
+          <p className="metric-card__label">Confirmed · billable 10%</p>
+          <p className="metric-card__value money">{formatCents(confirmed)}</p>
         </article>
       </div>
 
       <article className="note-card section">
-        <p className="metric-card__label">How we know you got paid</p>
+        <p className="metric-card__label">Franchise ladder</p>
         <p className="page-header__text">
-          We do not scrape Uber or DoorDash. You send the letter from your
-          merchant inbox. When the cash shows up, you tap{" "}
-          <strong>Mark refund received</strong> on that line. That is the only
-          signal we bill the {RECOVERY_FEE_BPS / 100}% against. If they deny it,
-          you tap refund denied — fee is $0 on that line.
+          Store 1 is {formatCents(MEMBERSHIP_FIRST_CENTS)}. Store 2, 3, 12 are{" "}
+          {formatCents(MEMBERSHIP_ADDITIONAL_CENTS)} each. Adding locations should
+          feel cheaper per door, not like a tax. Recovery fee stays{" "}
+          {RECOVERY_FEE_BPS / 100}% of confirmed wins on every store.
+        </p>
+      </article>
+
+      <article className="note-card section">
+        <p className="metric-card__label">What they send vs what is live</p>
+        <p className="page-header__text">
+          <strong>Now, they send:</strong> the DoorDash / Uber / Grubhub payout
+          or adjustments CSV as soon as the portal has it — not “once a week.”
+          Platforms give about {DISPUTE_WINDOW_DAYS} days. Waiting for Sunday
+          burns seven of them. POS and bank files are optional.
+        </p>
+        <p className="page-header__text">
+          <strong>Now, we get live:</strong> nothing from the apps. No API
+          tokens yet. Email forward is not wired. If they do not upload, we do
+          not see the clawback.
+        </p>
+        <p className="page-header__text">
+          <strong>Next:</strong> auto-forward of “refund issued / adjustment”
+          mail so we see the take the same day. Then partner APIs (DoorDash,
+          Uber, Toast, Square) and Plaid for the deposit lump. Until those
+          exist, speed is “drop the file the morning it appears.”
+        </p>
+      </article>
+
+      <article className="note-card section">
+        <p className="metric-card__label">If they ghost us</p>
+        <p className="page-header__text">
+          We still get paid. Membership is the invoice —{" "}
+          {formatCents(MEMBERSHIP_FIRST_CENTS)} first store,{" "}
+          {formatCents(MEMBERSHIP_ADDITIONAL_CENTS)} each extra — every month
+          the account is on. Bank files and “I got it back” taps are optional.
+          They never gate that bill. Letters stay on as long as membership is
+          current. Cancel membership, lose the workspace.
+        </p>
+        <p className="page-header__text">
+          The 10% is extra, on top of that floor, and only when a later payout
+          file proves the reversal. If they ghost uploads we miss new clawbacks
+          and we miss that cut until they come back with a file — the 10%
+          catches up on whatever that file confirms. We do not work for free.
+          Membership is the money when they go quiet.
         </p>
       </article>
 
       <article className="note-card section">
         <p className="metric-card__label">Estimated this period (not billed)</p>
         <p className="page-header__text">
-          Membership {formatCents(membership)} + recovery fee{" "}
+          Membership {formatCents(membership)} + confirmed recovery fee{" "}
           {formatCents(recoveryFee)} = <strong className="money">{formatCents(estimated)}</strong>
         </p>
         <p className="page-header__text">
-          Stripe is not connected. Nobody is charged. This page is the scoreboard
-          so you can see the model before money moves.
+          Claimed {formatCents(claimed)} is not in that number. Nobody is charged
+          until Stripe is on.
         </p>
         <Link className="button button--ghost" href="/dashboard/disputes">
           Open disputes

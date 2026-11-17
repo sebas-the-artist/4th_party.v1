@@ -48,6 +48,23 @@
   color: var(--accent);
 }
 
+.landing-main__slogan {
+  display: block;
+  margin-top: 2px;
+  color: var(--ink-dim);
+  font-family: inherit;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.landing-main__brand .brand-logo-frame,
+.landing-main__brand .brand-logo {
+  width: 64px;
+  height: 64px;
+}
+
 .landing-main__nav {
   display: flex;
   flex-wrap: wrap;

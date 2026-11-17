@@ -10,7 +10,8 @@ import { writeStoreCookie } from "@/lib/store-context";
 import {
   addLocation,
   markDispute,
-  resetDemoWorkspace,
+  enterSamplePreview,
+  exitSamplePreview,
   resolveMatch,
   runFromCsv,
   saveContact,
@@ -49,7 +50,13 @@ async function csvFromForm(formData: FormData, textName: string, fileName: strin
 }
 
 export async function loadDemoAction() {
-  await resetDemoWorkspace();
+  await enterSamplePreview();
+  refresh();
+  redirect("/dashboard");
+}
+
+export async function exitSampleAction() {
+  await exitSamplePreview();
   refresh();
   redirect("/dashboard");
 }
@@ -90,9 +97,10 @@ const ingestSchema = z.object({
   locationId: z.string().min(1),
   periodStart: z.string().min(8),
   periodEnd: z.string().min(8),
-  posCsv: z.string().trim().min(1, "Paste the POS CSV."),
-  deliveryCsv: z.string().trim().min(1, "Paste the delivery CSV."),
-  bankCsv: z.string().trim().min(1, "Paste the bank CSV."),
+  posCsv: z.string().trim().optional().default(""),
+  deliveryCsv: z.string().trim().min(1, "Paste or upload a DoorDash / Uber / Grubhub payout CSV."),
+  bankCsv: z.string().trim().optional().default(""),
+  defaultPlatform: z.enum(["doordash", "uber_eats", "grubhub"]).optional(),
 });
 
 export async function ingestCsvAction(
@@ -100,6 +108,7 @@ export async function ingestCsvAction(
   formData: FormData,
 ): Promise<IngestState> {
   try {
+    const platform = String(formData.get("defaultPlatform") ?? "");
     const parsed = ingestSchema.safeParse({
       locationId: formData.get("locationId"),
       periodStart: formData.get("periodStart"),
@@ -107,6 +116,7 @@ export async function ingestCsvAction(
       posCsv: await csvFromForm(formData, "posCsv", "posFile"),
       deliveryCsv: await csvFromForm(formData, "deliveryCsv", "deliveryFile"),
       bankCsv: await csvFromForm(formData, "bankCsv", "bankFile"),
+      defaultPlatform: platform || undefined,
     });
 
     if (!parsed.success) {

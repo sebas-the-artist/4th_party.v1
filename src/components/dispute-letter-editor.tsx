@@ -123,7 +123,7 @@ export function DisputeLetterEditor({
             <input type="hidden" name="matchId" value={dispute.matchId} />
             <input type="hidden" name="outcome" value="approved" />
             <button className="button button--primary" type="submit">
-              Mark refund received
+              I think the cash came back
             </button>
           </form>
           <form action={resolveMatchAction}>

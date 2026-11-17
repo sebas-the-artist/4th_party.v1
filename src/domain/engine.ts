@@ -1,5 +1,5 @@
 import { buildDisputeText } from "@/domain/disputes";
-import { centsVariance } from "@/domain/money";
+import { centsVariance, formatCents } from "@/domain/money";
 import type {
   BankDeposit,
   ContactProfile,
@@ -41,12 +41,7 @@ function classifyOrder(
   }
 
   if (delivery && !pos) {
-    return {
-      status: "unmatched_delivery" as const,
-      expectedCents: 0,
-      receivedCents: delivery.netCents,
-      summary: `Delivery order ${delivery.orderId} has no matching POS ticket.`,
-    };
+    return classifyPayoutOnly(delivery);
   }
 
   if (!pos || !delivery) {
@@ -56,33 +51,49 @@ function classifyOrder(
   const bps = commissionBpsFor(sources, delivery.platform);
   const expectedCommissionCents = expectedCommission(pos.grossCents, bps);
   const expectedCents = pos.grossCents - expectedCommissionCents;
-  const receivedCents = delivery.netCents;
-  const varianceCents = centsVariance(receivedCents, expectedCents);
+  const receivedCents = Math.max(delivery.netCents, 0);
+  const shortCents = expectedCents - receivedCents;
 
   if (delivery.status === "canceled" && pos.status === "completed") {
+    if (shortCents <= 1) {
+      return {
+        status: "matched" as const,
+        expectedCents,
+        receivedCents,
+        summary: `Order ${delivery.orderId} was marked canceled, but the payout still covered expected net.`,
+      };
+    }
     return {
       status: "unpaid_cancellation" as const,
       expectedCents: pos.grossCents,
       receivedCents,
-      summary: `Food was sold on POS, then ${delivery.orderId} was canceled unpaid.`,
+      summary: `Food was sold on POS, then ${delivery.orderId} was canceled. Still owed ${formatCents(pos.grossCents - receivedCents)}.`,
     };
   }
 
   if (delivery.status === "refunded" && pos.status === "completed") {
+    if (shortCents <= 1) {
+      return {
+        status: "matched" as const,
+        expectedCents,
+        receivedCents,
+        summary: `Refund language on ${delivery.orderId}, but expected net still landed.`,
+      };
+    }
     return {
       status: "unmatched_refund" as const,
       expectedCents,
       receivedCents,
-      summary: `Refund posted on the payout while POS ticket ${pos.ticketId} stayed completed.`,
+      summary: `Refund posted on the payout while POS ticket ${pos.ticketId} stayed completed. Still owed ${formatCents(shortCents)}.`,
     };
   }
 
-  if (Math.abs(varianceCents) <= 1) {
+  if (shortCents <= 1) {
     return {
       status: "matched" as const,
       expectedCents,
       receivedCents,
-      summary: `Order ${delivery.orderId} matched POS, payout, and expected net.`,
+      summary: `Order ${delivery.orderId} matched POS and payout. Extra on the line is ignored.`,
     };
   }
 
@@ -92,7 +103,7 @@ function classifyOrder(
       status: "fee_error" as const,
       expectedCents,
       receivedCents,
-      summary: `Commission on ${delivery.orderId} is ${delivery.commissionCents} cents vs contracted ${expectedCommissionCents}.`,
+      summary: `Commission on ${delivery.orderId} is ${formatCents(delivery.commissionCents)} vs contracted ${formatCents(expectedCommissionCents)}.`,
     };
   }
 
@@ -100,7 +111,105 @@ function classifyOrder(
     status: "short_pay" as const,
     expectedCents,
     receivedCents,
-    summary: `Payout for ${delivery.orderId} is short ${Math.abs(varianceCents)} cents.`,
+    summary: `Payout for ${delivery.orderId} is short ${formatCents(shortCents)}.`,
+  };
+}
+
+function expectedNetCents(delivery: DeliveryItem) {
+  return Math.max(delivery.grossCents - delivery.commissionCents, 0);
+}
+
+function takeCents(delivery: DeliveryItem) {
+  if (delivery.adjustmentCents < 0) {
+    return -delivery.adjustmentCents;
+  }
+  if (delivery.netCents < 0) {
+    return -delivery.netCents;
+  }
+  return 0;
+}
+
+function isCleanPayout(delivery: DeliveryItem) {
+  const hay = `${delivery.status} ${delivery.adjustmentReason}`.toLowerCase();
+  if (delivery.netCents < 0 || delivery.adjustmentCents < 0) {
+    return false;
+  }
+  if (delivery.status === "canceled" || delivery.status === "refunded") {
+    return false;
+  }
+  if (/undeliver|cancel|refund|error charge|clawback|missing|never arrived|late report/.test(hay)) {
+    return delivery.netCents >= expectedNetCents(delivery) - 1;
+  }
+  return delivery.netCents >= expectedNetCents(delivery) - 1;
+}
+
+function merchantOwed(expectedCents: number, receivedCents: number) {
+  return expectedCents - receivedCents > 1;
+}
+
+function classifyPayoutOnly(delivery: DeliveryItem) {
+  const hay = `${delivery.status} ${delivery.adjustmentReason}`.toLowerCase();
+  const missingItem = /missing item|didn't receive all|incomplete order/.test(hay);
+  const expectedFromSale = expectedNetCents(delivery);
+  const taken = takeCents(delivery);
+  const paid = Math.max(delivery.netCents, 0);
+
+  if (delivery.status === "canceled" || /undeliver|never arrived|not delivered/.test(hay)) {
+    const expectedCents = expectedFromSale || taken || delivery.grossCents;
+    const receivedCents = paid;
+    if (!merchantOwed(expectedCents, receivedCents)) {
+      return {
+        status: "matched" as const,
+        expectedCents,
+        receivedCents,
+        summary: `Cancel language on ${delivery.orderId}, but the payout was not short.`,
+      };
+    }
+    return {
+      status: "unpaid_cancellation" as const,
+      expectedCents,
+      receivedCents,
+      summary: /late report/.test(hay)
+        ? `Late report on ${delivery.orderId} took ${formatCents(expectedCents - receivedCents)}. Platforms usually reverse these.`
+        : `Payout marked undelivered/canceled on ${delivery.orderId}. Still owed ${formatCents(expectedCents - receivedCents)}.`,
+    };
+  }
+
+  if (taken > 0 || delivery.status === "refunded" || delivery.netCents < 0) {
+    const expectedCents = Math.max(expectedFromSale, taken);
+    const receivedCents = delivery.netCents < 0 ? 0 : paid;
+    if (!merchantOwed(expectedCents, receivedCents)) {
+      return {
+        status: "matched" as const,
+        expectedCents,
+        receivedCents,
+        summary: `Adjustment on ${delivery.orderId} did not leave the store short.`,
+      };
+    }
+    return {
+      status: "unmatched_refund" as const,
+      expectedCents,
+      receivedCents,
+      summary: missingItem
+        ? `Missing-item clawback on ${delivery.orderId} for ${formatCents(expectedCents - receivedCents)}. Letter is drafted — they usually want a bag photo.`
+        : `Error charge / deduction on ${delivery.orderId} took ${formatCents(expectedCents - receivedCents)}.`,
+    };
+  }
+
+  if (merchantOwed(expectedFromSale, paid)) {
+    return {
+      status: "short_pay" as const,
+      expectedCents: expectedFromSale,
+      receivedCents: paid,
+      summary: `Payout for ${delivery.orderId} is short ${formatCents(expectedFromSale - paid)}.`,
+    };
+  }
+
+  return {
+    status: "matched" as const,
+    expectedCents: expectedFromSale,
+    receivedCents: paid,
+    summary: `Payout line ${delivery.orderId} is not short.`,
   };
 }
 
@@ -116,6 +225,7 @@ export function runMatchingEngine(input: {
 }): MatchRecord[] {
   const matches: MatchRecord[] = [];
   const usedDelivery = new Set<string>();
+  const payoutOnly = input.posOrders.length === 0;
 
   for (const pos of input.posOrders) {
     const delivery = input.deliveryItems.find(
@@ -126,6 +236,8 @@ export function runMatchingEngine(input: {
     }
 
     const classified = classifyOrder(pos, delivery, input.sources);
+    const status =
+      merchantOwed(classified.expectedCents, classified.receivedCents) ? classified.status : "matched";
     const record: MatchRecord = {
       id: id("mch"),
       runId: input.runId,
@@ -133,21 +245,24 @@ export function runMatchingEngine(input: {
       platform: delivery?.platform ?? inferPlatform(pos.platformOrderId),
       posOrderId: pos.id,
       deliveryItemId: delivery?.id,
-      status: classified.status,
+      status,
       expectedCents: classified.expectedCents,
       receivedCents: classified.receivedCents,
       recoveredCents: 0,
+      recoveryEvidence: "none",
       varianceCents: centsVariance(classified.receivedCents, classified.expectedCents),
       summary: classified.summary,
       disputeText: "",
     };
-    record.disputeText = buildDisputeText({
-      match: record,
-      pos,
-      delivery,
-      location: input.location,
-      contact: input.contact,
-    });
+    if (status !== "matched") {
+      record.disputeText = buildDisputeText({
+        match: record,
+        pos,
+        delivery,
+        location: input.location,
+        contact: input.contact,
+      });
+    }
     matches.push(record);
   }
 
@@ -155,28 +270,47 @@ export function runMatchingEngine(input: {
     if (usedDelivery.has(delivery.id)) {
       continue;
     }
-    const classified = classifyOrder(undefined, delivery, input.sources);
+    const classified =
+      payoutOnly && isCleanPayout(delivery)
+        ? {
+            status: "matched" as const,
+            expectedCents: expectedNetCents(delivery),
+            receivedCents: Math.max(delivery.netCents, 0),
+            summary: `Payout line ${delivery.orderId} paid as expected.`,
+          }
+        : classifyOrder(undefined, delivery, input.sources);
+    const status =
+      classified.status === "matched" || !merchantOwed(classified.expectedCents, classified.receivedCents)
+        ? "matched"
+        : classified.status;
     const record: MatchRecord = {
       id: id("mch"),
       runId: input.runId,
       locationId: input.locationId,
       platform: delivery.platform,
       deliveryItemId: delivery.id,
-      status: classified.status,
+      status,
       expectedCents: classified.expectedCents,
       receivedCents: classified.receivedCents,
       recoveredCents: 0,
+      recoveryEvidence: "none",
       varianceCents: centsVariance(classified.receivedCents, classified.expectedCents),
       summary: classified.summary,
       disputeText: "",
     };
-    record.disputeText = buildDisputeText({
-      match: record,
-      delivery,
-      location: input.location,
-      contact: input.contact,
-    });
+    if (status !== "matched") {
+      record.disputeText = buildDisputeText({
+        match: record,
+        delivery,
+        location: input.location,
+        contact: input.contact,
+      });
+    }
     matches.push(record);
+  }
+
+  if (input.bankDeposits.length === 0) {
+    return matches;
   }
 
   const batches = new Map<string, { platform: Platform; expected: number; received: number; deposit?: BankDeposit }>();
@@ -204,7 +338,7 @@ export function runMatchingEngine(input: {
 
   for (const [batchId, batch] of batches) {
     const varianceCents = centsVariance(batch.received, batch.expected);
-    const status = Math.abs(varianceCents) <= 1 ? "matched" : "deposit_short";
+    const status = batch.received + 1 >= batch.expected ? "matched" : "deposit_short";
     const record: MatchRecord = {
       id: id("mch"),
       runId: input.runId,
@@ -215,6 +349,7 @@ export function runMatchingEngine(input: {
       expectedCents: batch.expected,
       receivedCents: batch.received,
       recoveredCents: 0,
+      recoveryEvidence: "none",
       varianceCents,
       summary:
         status === "matched"

@@ -55,7 +55,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
     <html
       lang="en"
       data-scroll-behavior="smooth"
-      data-palette="harbor"
+      data-palette="bee"
       data-scheme="light"
       suppressHydrationWarning
     >

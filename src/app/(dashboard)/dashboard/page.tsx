@@ -9,14 +9,15 @@ import { dashboardSummary, filterMatches, getScopedWorkspace } from "@/lib/works
 export default async function DashboardPage({
   searchParams,
 }: {
-  searchParams: Promise<{ platform?: string; recovered?: string }>;
+  searchParams: Promise<{ platform?: string; recovered?: string; status?: string }>;
 }) {
   const params = await searchParams;
   const { workspace, scoped, location } = await getScopedWorkspace();
   const summary = dashboardSummary(scoped);
   const setup = setupProgress(workspace, location);
   const platform = params.platform ?? "all";
-  const records = filterMatches(scoped.matches, { platform });
+  const status = params.status ?? "flags";
+  const records = filterMatches(scoped.matches, { platform, status });
 
   return (
     <section>
@@ -29,18 +30,20 @@ export default async function DashboardPage({
             {location ? summary.locationName : "Let’s get a store on the board"}
           </h1>
           <p className="page-header__text">
-            {setup.complete
+            {setup.hasRun
               ? "Red numbers are money still sitting with the apps. Tap one, send the letter, mark it recovered."
-              : "Follow the checklist. We cannot find unpaid cancellations until the store, POS, an app, and the bank are on."}
+              : "Add a store, turn on an app, drop the payout CSV as soon as it exists. Do not wait a week."}
           </p>
         </div>
-        {setup.complete ? (
+        {setup.readyToMatch ? (
           <div className="page-header__actions">
-            <Link className="button button--ghost" href="/dashboard/reconciliations">
-              View all records
-            </Link>
+            {setup.hasRun ? (
+              <Link className="button button--ghost" href="/dashboard/reconciliations">
+                View all records
+              </Link>
+            ) : null}
             <Link className="button button--primary" href="/dashboard/reconciliations/new">
-              Run a week
+              Upload payout
             </Link>
           </div>
         ) : null}
@@ -48,7 +51,7 @@ export default async function DashboardPage({
 
       <SetupGuide setup={setup} />
 
-      {setup.complete ? (
+      {setup.hasRun ? (
         <>
           <div className="metric-grid">
             <article className="metric-card metric-card--alert">
@@ -85,11 +88,20 @@ export default async function DashboardPage({
                       <p className="attention-row__title">
                         {item.platform} · {item.statusLabel}
                       </p>
-                      <p className="attention-row__meta">{item.summary}</p>
+                      <p className="attention-row__meta">
+                        {item.summary}
+                        {item.daysLeft != null
+                          ? ` · ${item.daysLeft} days left to dispute`
+                          : ""}
+                      </p>
                     </div>
                     <div>
                       <p className="attention-row__amount money">{item.variance}</p>
-                      <StatusBadge status={item.status} recoveredCents={item.recoveredCents} />
+                      <StatusBadge
+                        status={item.status}
+                        recoveredCents={item.recoveredCents}
+                        recoveryEvidence={item.recoveryEvidence}
+                      />
                     </div>
                   </Link>
                 ))}
@@ -102,15 +114,21 @@ export default async function DashboardPage({
               <h2 className="section__title">Records by platform</h2>
               <Link href="/dashboard/reconciliations">Open the full ledger</Link>
             </div>
-            <div className="chip-row" role="tablist" aria-label="Filter by platform">
-              <Link className={`chip ${platform === "all" ? "chip--active" : ""}`} href="/dashboard">
-                All
+            <div className="chip-row" role="tablist" aria-label="Filter records">
+              <Link className={`chip ${status === "flags" ? "chip--active" : ""}`} href="/dashboard">
+                Flags only
+              </Link>
+              <Link
+                className={`chip ${status === "all" ? "chip--active" : ""}`}
+                href="/dashboard?status=all"
+              >
+                All statuses
               </Link>
               {(["doordash", "uber_eats", "grubhub"] as const).map((key) => (
                 <Link
                   key={key}
                   className={`chip ${platform === key ? "chip--active" : ""}`}
-                  href={`/dashboard?platform=${key}`}
+                  href={`/dashboard?platform=${key}${status === "all" ? "&status=all" : ""}`}
                 >
                   {platformLabel(key)}
                 </Link>
@@ -141,7 +159,11 @@ export default async function DashboardPage({
                           </Link>
                         </td>
                         <td data-label="Status">
-                          <StatusBadge status={row.status} recoveredCents={row.recoveredCents} />
+                          <StatusBadge
+                            status={row.status}
+                            recoveredCents={row.recoveredCents}
+                            recoveryEvidence={row.recoveryEvidence}
+                          />
                         </td>
                         <td data-label="Variance" className="money">
                           {formatCents(row.varianceCents)}

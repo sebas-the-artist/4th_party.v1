@@ -1,8 +1,12 @@
 export type ColorScheme = "light" | "dark";
 
+export type PaletteGroup = "vision" | "animal";
+
 export type Palette = {
   id: string;
   name: string;
+  group: PaletteGroup;
+  blurb: string;
   light: string;
   dark: string;
   accent: string;
@@ -10,92 +14,113 @@ export type Palette = {
 
 export const PALETTES: Palette[] = [
   {
-    id: "harbor",
-    name: "Harbor cream",
-    light: "#f3eee4",
-    dark: "#2c261e",
-    accent: "#b45a32",
+    id: "protanope",
+    name: "Protanope",
+    group: "vision",
+    blurb:
+      "Protanopia is red-green color blindness that knocks out the red cones. Reds look dark or brown, so this theme never uses red to mean money. Teal vs cream still splits paid from owed.",
+    light: "#f3f1e8",
+    dark: "#1c2430",
+    accent: "#2f7f8e",
   },
   {
-    id: "ledger",
-    name: "Sunday ledger",
-    light: "#f7f1e3",
-    dark: "#1f1a14",
-    accent: "#c49a3c",
+    id: "deuteranope",
+    name: "Deuteranope",
+    group: "vision",
+    blurb:
+      "Deuteranopia is the common red-green type — greens go muddy and blend into yellow. Accent is gold, not green, so a matched line and a clawback are not the same color.",
+    light: "#f5f0e4",
+    dark: "#241e18",
+    accent: "#c48a2a",
   },
   {
-    id: "olive",
-    name: "Kitchen olive",
-    light: "#eef0e4",
-    dark: "#243024",
-    accent: "#6b7f3a",
+    id: "tritanope",
+    name: "Tritanope",
+    group: "vision",
+    blurb:
+      "Tritanopia (sometimes written tritanomaly) is blue-yellow color blindness. Blues collapse toward green and yellows can look pink. Coral on cream keeps the page from vanishing.",
+    light: "#f7f0e8",
+    dark: "#2a1c18",
+    accent: "#c45c3a",
   },
   {
-    id: "tide",
-    name: "Tide pool",
-    light: "#e7eef0",
-    dark: "#16303a",
-    accent: "#2a7d86",
+    id: "monochrome",
+    name: "Monochrome",
+    group: "vision",
+    blurb:
+      "Achromatopsia is near-total color blindness. Contrast, weight, and the target mark do the work. No hue to guess at.",
+    light: "#ececec",
+    dark: "#161616",
+    accent: "#5a5a5a",
   },
   {
-    id: "plum",
-    name: "Late plum",
-    light: "#f3eaf0",
-    dark: "#2b1c28",
-    accent: "#8e3d6b",
+    id: "bee",
+    name: "Bee",
+    group: "animal",
+    blurb:
+      "Bees do not see red. A red flower often looks dark to them; they lock onto blue, green, and ultraviolet. That is why this is not the red theme.",
+    light: "#eef6ea",
+    dark: "#14261c",
+    accent: "#2f7ad1",
   },
   {
-    id: "clay",
-    name: "Fired clay",
-    light: "#f6ebe3",
-    dark: "#3a241c",
-    accent: "#c46a3a",
+    id: "deer",
+    name: "Deer",
+    group: "animal",
+    blurb:
+      "Deer are dichromats — mostly blue and yellow. Hunter orange works because it is bright, not because they see “orange” like we do.",
+    light: "#eef2e2",
+    dark: "#1c2416",
+    accent: "#c9a227",
   },
   {
-    id: "slate",
-    name: "Cool slate",
-    light: "#eceef1",
-    dark: "#1c2228",
-    accent: "#4d6d8b",
+    id: "dog",
+    name: "Dog",
+    group: "animal",
+    blurb:
+      "Dogs mostly see blue and yellow. A red ball in green grass is just two browns. Cool slate plus a blue accent.",
+    light: "#eef1f4",
+    dark: "#1a2228",
+    accent: "#3d6ea8",
   },
   {
-    id: "rose",
-    name: "Rosewater",
-    light: "#f6ecec",
-    dark: "#321c1e",
-    accent: "#b44c5a",
+    id: "bird",
+    name: "Bird",
+    group: "animal",
+    blurb:
+      "Many birds have a fourth cone for ultraviolet. Their world is louder than ours. This one is punchy on purpose.",
+    light: "#f6eef6",
+    dark: "#1a1430",
+    accent: "#e23e8c",
   },
   {
-    id: "citrus",
-    name: "Citrus rind",
-    light: "#f4f0d8",
-    dark: "#2a2814",
-    accent: "#c4841c",
+    id: "bug",
+    name: "Bug",
+    group: "animal",
+    blurb:
+      "Insects add ultraviolet and very fast flicker. Green-gold so the UI feels like a meadow, not a steakhouse after close.",
+    light: "#eaf6e8",
+    dark: "#102018",
+    accent: "#5aaa32",
   },
   {
-    id: "ink",
-    name: "Ink well",
-    light: "#e8e6e1",
-    dark: "#141414",
-    accent: "#3d5a80",
-  },
-  {
-    id: "moss",
-    name: "After service",
-    light: "#e9eee6",
-    dark: "#1c261c",
-    accent: "#3f6b4e",
-  },
-  {
-    id: "night",
-    name: "Night market",
-    light: "#e8e4f2",
-    dark: "#1a1630",
-    accent: "#d4783c",
+    id: "fish",
+    name: "Fish",
+    group: "animal",
+    blurb:
+      "Red dies first underwater. A lot of reef life lives in blue-green, so this theme does too.",
+    light: "#e6f3f4",
+    dark: "#0c2430",
+    accent: "#1aa6b8",
   },
 ];
 
-export const DEFAULT_PALETTE_ID = "harbor";
+export const PALETTE_GROUPS: { id: PaletteGroup; label: string }[] = [
+  { id: "vision", label: "Color vision" },
+  { id: "animal", label: "How they see it" },
+];
+
+export const DEFAULT_PALETTE_ID = "bee";
 export const DEFAULT_SCHEME: ColorScheme = "light";
 export const PALETTE_STORAGE_KEY = "4th-party-palette";
 export const SCHEME_STORAGE_KEY = "4th-party-scheme";

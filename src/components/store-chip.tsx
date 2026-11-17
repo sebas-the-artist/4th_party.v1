@@ -30,10 +30,6 @@ export function StoreChip({
     );
   }
 
-  if (pathname === "/dashboard") {
-    return null;
-  }
-
   return (
     <details ref={detailsRef} className="store-chip">
       <summary className="store-chip__summary">

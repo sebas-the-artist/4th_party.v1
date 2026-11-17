@@ -32,7 +32,7 @@ export default async function ExceptionsPage({
         </div>
       </header>
 
-      <SetupGuide setup={setup} />
+      <SetupGuide setup={setup} variant="compact" />
 
       <div className="chip-row" role="tablist" aria-label="Filter by platform">
         <Link
@@ -70,11 +70,18 @@ export default async function ExceptionsPage({
                 <p className="attention-row__title">
                   {item.platform} · {item.statusLabel}
                 </p>
-                <p className="attention-row__meta">{item.summary}</p>
+                <p className="attention-row__meta">
+                  {item.summary}
+                  {item.daysLeft != null ? ` · ${item.daysLeft} days left to dispute` : ""}
+                </p>
               </div>
               <div>
                 <p className="attention-row__amount money">{item.variance}</p>
-                <StatusBadge status={item.status} recoveredCents={item.recoveredCents} />
+                <StatusBadge
+                  status={item.status}
+                  recoveredCents={item.recoveredCents}
+                  recoveryEvidence={item.recoveryEvidence}
+                />
               </div>
             </Link>
           ))}

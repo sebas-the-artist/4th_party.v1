@@ -16,9 +16,10 @@ export default async function ReconciliationsPage({
   const { workspace, scoped, location } = await getScopedWorkspace();
   const setup = setupProgress(workspace, location);
   const run = scoped.runs[0];
+  const status = params.status ?? "flags";
   const rows = filterMatches(latestRunMatches(scoped), {
     platform: params.platform,
-    status: params.status,
+    status,
     query: params.q,
   });
 
@@ -26,12 +27,14 @@ export default async function ReconciliationsPage({
     const query = new URLSearchParams();
     const merged = {
       platform: params.platform,
-      status: params.status,
+      status,
       q: params.q,
       ...next,
     };
     for (const [key, value] of Object.entries(merged)) {
-      if (value && value !== "all") query.set(key, value);
+      if (!value) continue;
+      if (key !== "status" && value === "all") continue;
+      query.set(key, value);
     }
     const text = query.toString();
     return text ? `/dashboard/reconciliations?${text}` : "/dashboard/reconciliations";
@@ -56,7 +59,19 @@ export default async function ReconciliationsPage({
         ) : null}
       </header>
 
-      <SetupGuide setup={setup} />
+      <SetupGuide setup={setup} variant="compact" />
+
+      <div className="chip-row" role="tablist" aria-label="Filter by status">
+        <Link className={`chip ${status === "flags" ? "chip--active" : ""}`} href={href({ status: "flags" })}>
+          Flags only
+        </Link>
+        <Link className={`chip ${status === "all" ? "chip--active" : ""}`} href={href({ status: "all" })}>
+          All statuses
+        </Link>
+        <Link className={`chip ${status === "matched" ? "chip--active" : ""}`} href={href({ status: "matched" })}>
+          Paid / matched
+        </Link>
+      </div>
 
       <LiveFilterForm action="/dashboard/reconciliations">
         <label className="filter-bar__field">
@@ -71,11 +86,13 @@ export default async function ReconciliationsPage({
         </label>
         <label className="filter-bar__field">
           Status
-          <select name="status" defaultValue={params.status ?? "all"}>
+          <select name="status" defaultValue={status}>
+            <option value="flags">Flags only</option>
             <option value="all">All statuses</option>
-            {MATCH_STATUSES.map((status) => (
-              <option key={status} value={status}>
-                {matchStatusLabel(status)}
+            <option value="matched">{matchStatusLabel("matched")}</option>
+            {MATCH_STATUSES.filter((item) => item !== "matched").map((item) => (
+              <option key={item} value={item}>
+                {matchStatusLabel(item)}
               </option>
             ))}
           </select>
@@ -122,7 +139,11 @@ export default async function ReconciliationsPage({
                     {formatCents(row.varianceCents)}
                   </td>
                   <td data-label="Status">
-                    <StatusBadge status={row.status} recoveredCents={row.recoveredCents} />
+                    <StatusBadge
+                      status={row.status}
+                      recoveredCents={row.recoveredCents}
+                      recoveryEvidence={row.recoveryEvidence}
+                    />
                   </td>
                   <td>
                     <Link className="data-table__open" href={`/dashboard/reconciliations/${row.id}`}>
@@ -136,7 +157,7 @@ export default async function ReconciliationsPage({
         </div>
       )}
       <p className="filter-bar__hint">
-        <Link href={href({})}>Show everything</Link>
+        <Link href={href({ status: "all" })}>Show everything</Link>
         {" · "}
         <Link href="/dashboard/locations">Switch location</Link>
       </p>

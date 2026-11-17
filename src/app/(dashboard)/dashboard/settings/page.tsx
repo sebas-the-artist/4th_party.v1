@@ -15,8 +15,9 @@ export default async function SettingsPage() {
           <p className="page-header__kicker">Settings</p>
           <h1 className="page-header__title">Workspace</h1>
           <p className="page-header__text">
-            Palettes live in the browser. Change light, dark, and color here or
-            on the landing page. Account sign-out is in the sidebar.
+            Palettes live in the browser. Light, dark, color-vision, and animal
+            themes are here and on the landing page. Sign-out is the account
+            menu in the top right.
           </p>
         </div>
       </header>
@@ -42,8 +43,10 @@ export default async function SettingsPage() {
         <article className="note-card">
           <p className="metric-card__label">Light, dark, and a named mix</p>
           <p className="page-header__text">
-            Light uses the pale shade as the page. Dark inverts and puts the deep
-            shade underneath.
+            Light uses the pale shade as the page. Dark puts the deep shade
+            underneath. Names on the dots follow the page, so they stay readable
+            in both. Hover a dot for the name; the blurb under the row says why
+            it is called Bee or Tritanope.
           </p>
           <ThemeControls variant="panel" />
         </article>
@@ -53,8 +56,8 @@ export default async function SettingsPage() {
         <h2 className="section__title">Billing</h2>
         <article className="note-card">
           <p className="page-header__text">
-            Membership is $49 per store per month plus 10% of refunds you mark
-            as received. Stripe is not on yet — see the scoreboard.
+            First store is $39 / month, each extra store $29, plus 10% of
+            payout-confirmed recoveries. Stripe is not on yet.
           </p>
           <Link className="button button--ghost" href="/dashboard/billing">
             Open billing

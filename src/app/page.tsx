@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { BrandMark } from "@/components/brand-mark";
+import { BrandLogo } from "@/components/brand-logo";
 import { LandingAuth } from "@/components/landing-auth";
 import { LandingHeroActions } from "@/components/landing-hero-actions";
 import { ThemeControls } from "@/components/theme-controls";
@@ -12,8 +12,11 @@ export default function Home() {
       <div className="landing-main">
         <header className="landing-main__header">
           <p className="landing-main__brand">
-            <BrandMark />
-            Dish<span className="landing-main__brand-mark">pute</span>
+            <BrandLogo />
+            <span>
+              Dish<span className="landing-main__brand-mark">pute</span>
+              <span className="landing-main__slogan">Protect What&apos;s Yours</span>
+            </span>
           </p>
           <nav className="landing-main__nav" aria-label="Landing">
             <a href="#how">How it works</a>
